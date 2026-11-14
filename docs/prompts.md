@@ -276,3 +276,26 @@ noted by name. Newest at the bottom.
 ### 24.
 
 > the CI failed please fix
+
+## Session 2 — 2026-11-14
+
+### 25. Presentation review
+
+> we need to prepare a presentation for our project. we need content for our slides only. i have researched and generated a presentation, i want u to verify it, see how we can make it better, what points to add or remove, the structure. I want the presentation to not just describe our project in simple language but also deliver impact and create a story and sell a business value. The judges will particly look for how are we using nasa data to make data driven decisions. DO NOT CREATE A PRESENTATION:
+
+<details>
+<summary>Pasted: draft 8-slide presentation (ChatGPT-generated)</summary>
+
+Draft 8-slide deck: 1 Crop-Watch AI title; 2 The Problem; 3 Our Solution (three layers);
+4 NASA & Earth data sources table (POWER, GRACE, MODIS, SMAP, SoilGrids, FAO-56/Manual 3,
+FAOSTAT); 5 From satellite data to agricultural intelligence (5-step pipeline); 6 Technical
+architecture & scoring engine (mermaid diagram); 7 Demo results, impact & limitations (four
+districts, data-coverage table, FAOSTAT caveat); 8 Conclusion & next steps. Followed by "what to
+emphasise to the judges", four expected judge questions, and a warning not to call every source
+a NASA dataset. (Pasted text summarised here; it included image links and rendered mermaid CSS.)
+
+</details>
+
+### 26. Presentation data
+
+> can u share data to be used in the ppt. all quantifiable information, facts and figures. mention any gaps. any assumptions.
