@@ -25,7 +25,10 @@ class AdviceTip(BaseModel):
     level: RiskLevel
     text_en: str
     text_ur: str | None = Field(default=None, description="Urdu text")
-    ur_reviewed: bool = Field(default=False, description="False = draft translation, not yet checked by a native speaker")
+    ur_reviewed: bool = Field(
+        default=False,
+        description="False = draft translation, not yet checked by a native speaker",
+    )
     source: str
 
 
