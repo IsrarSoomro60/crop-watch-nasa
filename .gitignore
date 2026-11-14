@@ -29,3 +29,7 @@ graphify-out/
 # Local database
 backend/var/
 *.db
+
+# Raw AppEEARS downloads (rebuild with scripts.fetch_appeears --task ID); the compact
+# app/data/sample/satellite_samples.json is committed instead.
+backend/app/data/sample/appeears/

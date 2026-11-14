@@ -6,6 +6,7 @@ import type {
   QuickCheckRequest,
   QuickCheckResult,
   Recommendation,
+  SatelliteData,
   SoilInfo,
 } from "../types";
 
@@ -32,6 +33,10 @@ export const api = {
     ),
   soil: (latitude: number, longitude: number) =>
     request<SoilInfo>(`/soil?${new URLSearchParams({ latitude: String(latitude), longitude: String(longitude) })}`),
+  satellite: (latitude: number, longitude: number) =>
+    request<SatelliteData>(
+      `/satellite?${new URLSearchParams({ latitude: String(latitude), longitude: String(longitude) })}`,
+    ),
   history: (body: HistoryRequest) =>
     request<HistoryResult>("/history", { method: "POST", body: JSON.stringify(body) }),
   quickCheck: (body: QuickCheckRequest) =>

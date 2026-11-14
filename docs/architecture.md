@@ -34,13 +34,19 @@ farmer priorities:
    sowing/harvest month-day over the last ~20 years of POWER data with the same risk engine and water
    method: how often each risk reached High, mean High days, a descriptive trend (OLS slope per decade,
    no significance test), and median / 1-in-5 irrigation need. In comparisons, seasons that end after
-   the latest weather (future seasons) use that historical median for water, flagged
-   `estimated_from_history`.
+   the latest weather (future seasons) use that historical median for water and the mean past risk
+   score per risk (level = most common worst level, ties to the more severe) for risk and resilience,
+   both flagged `estimated_from_history`. This is a typical-year estimate, not a forecast.
 7. **Quick check** (`POST /api/quick-check`, `services/quick_check.py`) — the research brief's
    single-crop view: last 7 days of POWER weather, stage from the sowing date (FAO-56 reference
    lengths) or a farmer-picked stage, Low/Moderate/High per risk with the brief's rule (Moderate 3+
    days in a row → High), worst risk as the badge, up to 3 cards with the number against the limit,
    tips, and a 7-day strip.
+7b. **Satellite add-ons** (`GET /api/satellite`, `services/satellite.py`) — saved samples for the
+   four demo districts (built by `scripts/build_satellite_samples.py`): MODIS NDVI (16-day, with pixel
+   reliability), SMAP L4 root-zone/surface soil moisture (daily means) and the GRACE/GRACE-FO mascon
+   water-storage anomaly with an OLS trend. Context only: not yet part of scoring. Other locations
+   get 404 rather than a distant series.
 8. **Recommendation** — `services/recommendation/recommendation_engine.py` builds dimension scores,
    applies farmer priorities with `services/rotation/scoring.py`, ranks rotations and lists
    limitations. `explanations.py` adds, per strategy, why it's considered, benefits versus the

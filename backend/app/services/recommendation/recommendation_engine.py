@@ -91,13 +91,15 @@ class RecommendationEngine:
         elevation_m: float | None = None,
         soil: SoilInfo | None = None,
         water_fallback: dict | None = None,
+        risk_fallback: dict | None = None,
     ) -> Recommendation:
         current = request.current.model_copy(update={"is_current": True})
         rotations = [current, *request.alternatives]
         lat = request.location.latitude
         texture = soil.texture_class if soil else None
         evaluations = [
-            self._evaluator.evaluate(r, observations, lat, elevation_m, texture, water_fallback) for r in rotations
+            self._evaluator.evaluate(r, observations, lat, elevation_m, texture, water_fallback, risk_fallback)
+            for r in rotations
         ]
         water_scores = water_scores_for(evaluations)
         for rotation, evaluation in zip(rotations, evaluations, strict=True):

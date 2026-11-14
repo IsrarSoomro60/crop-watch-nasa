@@ -43,22 +43,25 @@ async def compare_rotations(
         soil = await soil_client.get(request.location)
     except httpx.HTTPError:
         soil = None  # soil is optional context; the comparison still runs without it
-    # Seasons that end after the latest weather (e.g. next season) get the historical median water need.
+    # Seasons that end after the latest weather (e.g. next season) get the historical median water need
+    # and the typical (mean) risk of the same dates in past years.
     latest = env.data_note.latest_observation_date
     future = [s for s in seasons if latest is None or s.harvest_date > latest]
-    fallback = None
+    fallback = risk_fallback = None
     if future:
         texture = soil.texture_class if soil else None
         histories, _, _, _ = await run_history(request.location, future, client, _profiles(), texture)
-        by_md = {(h.crop, h.sowing_month_day, h.harvest_month_day): h.water for h in histories}
-        fallback = {
+        by_md = {(h.crop, h.sowing_month_day, h.harvest_month_day): h for h in histories}
+        matched = {
             (s.crop, s.sowing_date, s.harvest_date): by_md.get((s.crop, s.sowing_date.strftime("%m-%d"),
                                                                  s.harvest_date.strftime("%m-%d")))
             for s in future
         }
-        fallback = {k: v for k, v in fallback.items() if v is not None}
+        fallback = {k: h.water for k, h in matched.items() if h is not None and h.water is not None}
+        risk_fallback = {k: h for k, h in matched.items() if h is not None and h.per_year}
     recommendation = engine.compare(
-        request, env.observations, elevation_m=env.data_note.elevation_m, soil=soil, water_fallback=fallback
+        request, env.observations, elevation_m=env.data_note.elevation_m, soil=soil, water_fallback=fallback,
+        risk_fallback=risk_fallback,
     )
     recommendation.data_note = env.data_note
     return recommendation

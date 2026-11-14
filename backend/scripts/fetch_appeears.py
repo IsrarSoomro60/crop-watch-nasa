@@ -8,6 +8,7 @@ credentials in backend/.env (never commit it):
 
 Run from backend/:
     uv run python -m scripts.fetch_appeears [START END]     # dates YYYY-MM-DD
+    uv run python -m scripts.fetch_appeears --task TASK_ID  # download a finished task
 
 AppEEARS runs point requests as background tasks, usually a few minutes to an hour.
 The script submits one task for all districts, polls until it is done, and saves every
@@ -87,21 +88,44 @@ def run(start: date, end: date, http: httpx.Client | None = None, settings: Sett
         time.sleep(POLL_SECONDS)
         waited += POLL_SECONDS
 
-    out = settings.sample_data_dir / "appeears" / name
-    out.mkdir(parents=True, exist_ok=True)
-    bundle = http.get(f"{API}/bundle/{task_id}", headers=auth).json()
-    for f in bundle["files"]:
-        data = http.get(f"{API}/bundle/{task_id}/{f['file_id']}", headers=auth, follow_redirects=True)
-        data.raise_for_status()
-        target = out / Path(f["file_name"]).name
-        target.write_bytes(data.content)
-        print(f"  saved {target.relative_to(settings.sample_data_dir)}")
+    out = download(http, auth, task_id, settings.sample_data_dir / "appeears" / name)
     (out / "task.json").write_text(json.dumps({"task_id": task_id, **build_task(start, end, name)}, indent=2))
     http.post(f"{API}/logout", headers=auth)
     return out
 
 
+def download(http: httpx.Client, auth: dict, task_id: str, out: Path) -> Path:
+    out.mkdir(parents=True, exist_ok=True)
+    bundle = http.get(f"{API}/bundle/{task_id}", headers=auth)
+    bundle.raise_for_status()
+    for f in bundle.json()["files"]:
+        data = http.get(f"{API}/bundle/{task_id}/{f['file_id']}", headers=auth, follow_redirects=True)
+        data.raise_for_status()
+        target = out / Path(f["file_name"]).name
+        target.write_bytes(data.content)
+        print(f"  saved {target}")
+    return out
+
+
+def fetch_existing(task_id: str, http: httpx.Client | None = None, settings: Settings | None = None) -> Path:
+    """Download the results of a task that was already submitted (e.g. from the AppEEARS website)."""
+    settings = settings or get_settings()
+    http = http or httpx.Client(timeout=120)
+    auth = {"Authorization": f"Bearer {login(http, settings)}"}
+    task = http.get(f"{API}/task/{task_id}", headers=auth)
+    task.raise_for_status()
+    info = task.json()
+    if info.get("status") != "done":
+        sys.exit(f"Task {task_id} status is {info.get('status')!r}, not done yet.")
+    out = download(http, auth, task_id, settings.sample_data_dir / "appeears" / info.get("task_name", task_id))
+    (out / "task.json").write_text(json.dumps(info, indent=2, default=str))
+    http.post(f"{API}/logout", headers=auth)
+    return out
+
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if len(args) == 2 and args[0] == "--task":
+        fetch_existing(args[1])
+        sys.exit(0)
     rng = (date.fromisoformat(args[0]), date.fromisoformat(args[1])) if len(args) == 2 else DEFAULT_RANGE
     run(*rng)

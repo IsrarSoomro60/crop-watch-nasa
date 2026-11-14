@@ -96,6 +96,8 @@ def explain(r: RankedRotation, current: RankedRotation, profiles: CropProfileRep
             gaps.append(f"{_name(c.crop).capitalize()}: {', '.join(missing)} not assessed.")
     if r.evaluation.water and any(s.estimated_from_history for s in r.evaluation.water.seasons):
         gaps.append("Water for future seasons is a 20-season historical median, not a forecast.")
+    if any(c.estimated_from_history for c in r.evaluation.crop_results):
+        gaps.append("Risk for future seasons is the average of past seasons with the same dates, not a forecast.")
     gaps = list(dict.fromkeys(gaps))
 
     # Needs local review

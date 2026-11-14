@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import environmental_data, farms, history, quick_check, rotations, soil
+from app.api.routes import environmental_data, farms, history, quick_check, rotations, satellite, soil
 from app.core import logging as app_logging
 from app.core.config import get_settings
 
@@ -23,6 +23,7 @@ ROUTERS = (
     rotations.router,
     history.router,
     quick_check.router,
+    satellite.router,
 )
 for router in ROUTERS:
     app.include_router(router, prefix="/api")

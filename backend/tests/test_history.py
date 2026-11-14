@@ -87,3 +87,34 @@ def test_future_season_uses_historical_water_median():
     assert any("median of 20 past seasons" in n for n in season.notes)
 
     assert rotation_water(profiles, [future], [], 30.0, 120.0).irrigation_need_m3 is None  # no fallback, no number
+
+
+def test_future_season_risk_uses_history():
+    from app.schemas.crop import RiskLevel
+    from app.schemas.history import RiskHistory, SeasonHistory, SeasonYear
+    from app.schemas.rotation import CropRiskResult
+    from app.services.history.vulnerability import risk_from_history, typical_level
+
+    assert typical_level([RiskLevel.LOW, RiskLevel.HIGH]) == RiskLevel.HIGH  # tie -> more severe
+    assert typical_level([RiskLevel.LOW, RiskLevel.LOW, RiskLevel.HIGH]) == RiskLevel.LOW
+    assert typical_level([]) is None
+
+    blank = CropRiskResult(crop=CropName.WHEAT, sowing_date=date(2027, 11, 15), risks=dict.fromkeys(RiskType, 0.0),
+                           max_risk=0.0, levels=dict.fromkeys(RiskType))
+    years = [
+        SeasonYear(sowing_year=2000 + i, levels={RiskType.HEAT: RiskLevel.HIGH if i < 3 else RiskLevel.LOW},
+                   high_days={RiskType.HEAT: 2 if i < 3 else 0}, risk_scores={RiskType.HEAT: 6.0 if i < 3 else 0.0})
+        for i in range(5)
+    ]
+    hist = SeasonHistory(
+        crop=CropName.WHEAT, sowing_month_day="11-15", harvest_month_day="04-15", season_days=152,
+        years=[y.sowing_year for y in years], per_year=years,
+        risks=[RiskHistory(risk=RiskType.HEAT, years_assessed=5, years_high=3, years_moderate=0,
+                           mean_risk_score=3.6, mean_high_days=1.2)],
+    )
+    est = risk_from_history(blank, hist)
+    assert est.estimated_from_history
+    assert est.risks[RiskType.HEAT] == 3.6 and est.max_risk == 3.6
+    assert est.levels[RiskType.HEAT] == RiskLevel.HIGH and est.high_days[RiskType.HEAT] == 1
+    assert any("mean of 5 past seasons (2000-2004)" in g for g in est.evidence_gaps)
+    assert est.advice and est.advice[0].text_en.startswith("Irrigate lightly")

@@ -41,13 +41,43 @@ export interface ComparisonRequest {
   current: Rotation;
   alternatives: Rotation[];
   priorities: Priorities;
+  economics?: Partial<Record<CropName, CropEconomics>>; // farmer values; FAOSTAT defaults fill gaps
+}
+
+export interface CropEconomics {
+  yield_t_ha?: number | null;
+  price_per_t?: number | null;
+  cost_per_ha?: number | null; // no default exists
+  currency?: string; // default "PKR"
+}
+
+export interface SeasonIncome {
+  crop: CropName;
+  area_hectares: number;
+  yield_t_ha: number | null;
+  yield_source: string | null;
+  price_per_t: number | null;
+  price_source: string | null;
+  cost_per_ha: number | null;
+  gross_revenue: number | null;
+  net_income: number | null; // only when costs are given
+  notes: string[];
+}
+
+export interface RotationIncome {
+  currency: string;
+  seasons: SeasonIncome[];
+  gross_revenue: number | null;
+  net_income: number | null;
+  basis: "net" | "gross";
 }
 
 export interface AdviceTip {
   risk: RiskType;
   level: RiskLevel;
   text_en: string;
-  text_ur: string | null; // null until translated and reviewed
+  text_ur: string | null;
+  ur_reviewed: boolean; // false = draft translation, not yet checked by a native speaker
   source: string;
 }
 
@@ -60,6 +90,7 @@ export interface CropRiskResult {
   moderate_days: Record<RiskType, number>;
   levels: Record<RiskType, RiskLevel | null>; // null = not assessed
   advice: AdviceTip[];
+  estimated_from_history: boolean; // future season: typical risk from past seasons, not a forecast
   evidence_gaps: string[];
 }
 
@@ -124,6 +155,7 @@ export interface RotationEvaluation {
   assumptions: string[];
   water: RotationWater | null;
   ground_cover: GroundCover | null;
+  income: RotationIncome | null;
 }
 
 export interface DimensionScores {
@@ -283,4 +315,42 @@ export interface QuickCheckResult {
   last_7_days: DayStrip[];
   data_note: DataNote;
   notes: string[];
+}
+
+// GET /api/satellite (saved samples for the demo districts only)
+export interface NdviPoint {
+  date: string;
+  ndvi: number | null;
+  reliability: number; // 0 good, 1 marginal, 2 snow/ice, 3 cloudy
+  usable: boolean;
+}
+
+export interface SoilMoisturePoint {
+  date: string;
+  rootzone_m3m3: number;
+  surface_m3m3: number;
+}
+
+export interface GracePoint {
+  date: string;
+  lwe_cm: number; // anomaly vs the 2004.0-2009.999 mean
+  uncertainty_cm: number;
+}
+
+export interface GraceSummary {
+  cell_lat: number;
+  cell_lon: number;
+  trend_cm_per_year: number | null;
+  latest: GracePoint | null;
+  series: GracePoint[];
+}
+
+export interface SatelliteData {
+  district: string;
+  distance_km: number;
+  ndvi: NdviPoint[];
+  soil_moisture: SoilMoisturePoint[];
+  grace: GraceSummary | null;
+  sources: Record<string, string>;
+  limitations: string[];
 }
