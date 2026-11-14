@@ -24,7 +24,8 @@ class AdviceTip(BaseModel):
     risk: RiskType
     level: RiskLevel
     text_en: str
-    text_ur: str | None = Field(default=None, description="Urdu text; null until translated and reviewed")
+    text_ur: str | None = Field(default=None, description="Urdu text")
+    ur_reviewed: bool = Field(default=False, description="False = draft translation, not yet checked by a native speaker")
     source: str
 
 
@@ -39,6 +40,9 @@ class CropRiskResult(BaseModel):
     high_days: dict[RiskType, int] = Field(default_factory=dict, description="Days at High per risk")
     moderate_days: dict[RiskType, int] = Field(default_factory=dict, description="Days at Moderate per risk")
     advice: list[AdviceTip] = Field(default_factory=list, description="Up to three tips")
+    estimated_from_history: bool = Field(
+        default=False, description="Future season: typical risk from past seasons, not this season's weather"
+    )
     evidence_gaps: list[str] = Field(default_factory=list)
 
 
@@ -84,4 +88,10 @@ class RotationEvaluation(BaseModel):
     highest_crop_season_risk: float
     water: RotationWater | None = None
     ground_cover: GroundCover | None = None
+    income: "RotationIncome | None" = None
     assumptions: list[str] = Field(default_factory=list)
+
+
+from app.schemas.income import RotationIncome  # noqa: E402
+
+RotationEvaluation.model_rebuild()

@@ -25,3 +25,7 @@ Thumbs.db
 
 # Local tooling output
 graphify-out/
+
+# Local database
+backend/var/
+*.db

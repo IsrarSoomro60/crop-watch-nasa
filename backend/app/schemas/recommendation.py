@@ -2,9 +2,10 @@
 
 from pydantic import BaseModel, Field
 
-from app.schemas.crop import RiskType
+from app.schemas.crop import CropName, RiskType
 from app.schemas.environment import DataNote
 from app.schemas.farm import Location, Priorities
+from app.schemas.income import CropEconomics
 from app.schemas.rotation import Rotation, RotationEvaluation
 from app.schemas.soil import SoilInfo
 
@@ -14,6 +15,9 @@ class ComparisonRequest(BaseModel):
     current: Rotation
     alternatives: list[Rotation] = Field(min_length=2)
     priorities: Priorities = Field(default_factory=Priorities)
+    economics: dict[CropName, CropEconomics] = Field(
+        default_factory=dict, description="Farmer's yield, price and cost per crop; FAOSTAT defaults fill gaps"
+    )
 
 
 class DimensionScores(BaseModel):

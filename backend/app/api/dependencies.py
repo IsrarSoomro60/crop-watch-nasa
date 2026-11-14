@@ -4,14 +4,14 @@ from fastapi import Depends
 
 from app.core.config import Settings, get_settings
 from app.repositories.crop_profiles import CropProfileRepository, get_crop_profile_repository
-from app.repositories.farms import InMemoryFarmRepository, farm_repository
+from app.repositories.farms import FarmRepository, get_farm_store
 from app.services.nasa.client import NasaPowerClient
 from app.services.recommendation.recommendation_engine import RecommendationEngine
 from app.services.soil.soilgrids import SoilGridsClient
 
 
-def get_farm_repository() -> InMemoryFarmRepository:
-    return farm_repository
+def get_farm_repository() -> FarmRepository:
+    return get_farm_store()
 
 
 def get_nasa_client(settings: Settings = Depends(get_settings)) -> NasaPowerClient:

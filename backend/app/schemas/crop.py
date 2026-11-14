@@ -81,6 +81,15 @@ class CropCoefficients(BaseModel):
     notes: str | None = None
 
 
+class WaterStressParams(BaseModel):
+    """FAO-56 Table 22: maximum effective rooting depth and depletion fraction for no stress."""
+
+    zr_max_m: float
+    p: float
+    source: str
+    notes: str | None = None
+
+
 class CropProfile(BaseModel):
     crop: CropName
     display_name: str
@@ -89,6 +98,7 @@ class CropProfile(BaseModel):
     season: str = Field(description="Typical season label, e.g. 'rabi' or 'kharif'")
     stages: list[GrowthStage]
     kc: CropCoefficients | None = None
+    water_stress: WaterStressParams | None = None
     water_regime: Literal["upland", "paddy"] = Field(
         default="upland", description="'paddy' adds soil soaking, percolation and water-layer needs"
     )

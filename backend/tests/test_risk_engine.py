@@ -90,7 +90,7 @@ def test_wheat_heat_scored_by_stage_with_advice():
     assert result.risks[RiskType.HEAT] == round(100 * (0.5 * 1.0 + 1.0 * 2.0) / (165 * 2.0), 2)
     assert result.levels[RiskType.COLD] is None  # no tmin observations supplied
     assert result.advice[0].text_en == "Irrigate lightly to cool the crop."
-    assert all(t.text_ur is None for t in result.advice)
+    assert all(t.text_ur and t.ur_reviewed is False for t in result.advice)
     assert any("heat: no limits for stage(s) maturity" in g for g in result.evidence_gaps)
     assert any("FAO-56 Table 11" in g for g in result.evidence_gaps)
 

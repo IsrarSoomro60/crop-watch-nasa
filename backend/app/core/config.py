@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     soilgrids_base_url: str = "https://rest.isric.org/soilgrids/v2.0/properties/query"
 
     crop_profiles_dir: Path = APP_DIR / "domain" / "crop_profiles"
+    database_path: Path = APP_DIR.parent / "var" / "cropwatch.db"
+    log_level: str = "INFO"
     sample_data_dir: Path = APP_DIR / "data" / "sample"
 
 

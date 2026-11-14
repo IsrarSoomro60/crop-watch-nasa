@@ -3,33 +3,43 @@
     "description": "Advice lookup keyed by crop, risk and level. crop '*' matches every crop.",
     "rules": [
       "Add an entry only with a cited or expert-reviewed source.",
-      "text_ur stays null until translated and reviewed by a native Urdu speaker."
+      "text_ur is a draft translation until a native Urdu speaker reviews it; then set ur_reviewed to true."
     ]
   },
   "entries": [
     {
       "crop": "wheat",
       "risk": "heat",
-      "levels": ["high"],
+      "levels": [
+        "high"
+      ],
       "text_en": "Irrigate lightly to cool the crop.",
-      "text_ur": null,
-      "source": "Crop-Watch AI research brief, section 2 worked example (2026-11-11); needs agronomist review"
+      "text_ur": "فصل کو ٹھنڈا رکھنے کے لیے ہلکی آبپاشی کریں۔",
+      "source": "Crop-Watch AI research brief, section 2 worked example (2026-11-11); needs agronomist review",
+      "ur_reviewed": false
     },
     {
       "crop": "wheat",
       "risk": "heat",
-      "levels": ["high"],
+      "levels": [
+        "high"
+      ],
       "text_en": "Hold back nitrogen fertilizer for now.",
-      "text_ur": null,
-      "source": "Crop-Watch AI research brief, section 2 worked example (2026-11-11); needs agronomist review"
+      "text_ur": "فی الحال نائٹروجن والی کھاد نہ ڈالیں۔",
+      "source": "Crop-Watch AI research brief, section 2 worked example (2026-11-11); needs agronomist review",
+      "ur_reviewed": false
     },
     {
       "crop": "*",
       "risk": "drought",
-      "levels": ["moderate", "high"],
+      "levels": [
+        "moderate",
+        "high"
+      ],
       "text_en": "Check irrigation. Most fields here are irrigated, so dry satellite readings alone do not prove drought.",
-      "text_ur": null,
-      "source": "Crop-Watch AI research brief, section 5 (region and soil limitation)"
+      "text_ur": "آبپاشی کی صورتحال دیکھیں۔ یہاں زیادہ تر کھیت سیراب کیے جاتے ہیں، اس لیے صرف سیٹلائٹ کی خشک ریڈنگ خشک سالی کا ثبوت نہیں۔",
+      "source": "Crop-Watch AI research brief, section 5 (region and soil limitation)",
+      "ur_reviewed": false
     }
   ]
 }

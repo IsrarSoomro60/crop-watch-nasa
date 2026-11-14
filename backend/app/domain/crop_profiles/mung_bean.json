@@ -141,7 +141,7 @@
   ],
   "evidence_gaps": [
     "Heat limit applies to the mid-season (flowering and pod filling) only; sources describe mung bean as heat-tolerant in the vegetative phase.",
-    "Drought, waterlogging and disease thresholds are not yet sourced (source notes sensitivity to waterlogging and seed spoilage from high moisture at maturity).",
+    "Waterlogging and disease thresholds are not yet sourced; drought uses the FAO-56 water balance. Sources note sensitivity to waterlogging and seed spoilage from high moisture at maturity.",
     "Stage lengths are FAO-56 Table 11 general values, scaled to each season; FAO says they 'may vary substantially' by region and variety and local data should be preferred."
   ],
   "stage_lengths_source": "FAO-56 Table 11, 'Green gram, cowpeas', planted March, region 'Mediterranean' (110 days). https://www.fao.org/4/x0490e/x0490e0b.htm",
@@ -151,5 +151,11 @@
     "end": 0.35,
     "source": "FAO-56 Table 12, https://www.fao.org/4/x0490e/x0490e0b.htm ('Green Gram and Cowpeas'; Kc ini from the legume group)",
     "notes": "Kc end 0.35 is FAO's value for harvest dry (0.60 if harvested fresh)."
+  },
+  "water_stress": {
+    "zr_max_m": 1.0,
+    "p": 0.45,
+    "source": "FAO-56 Table 22, https://www.fao.org/4/x0490e/x0490e0e.htm ('Green Gram and Cowpeas', Zr 0.6-1.0 m)",
+    "notes": "Larger Zr of the FAO range, which FAO-56 footnote 1 recommends for modelling soil water stress."
   }
 }

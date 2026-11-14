@@ -39,3 +39,16 @@ def heat_profile() -> CropProfile:
 
 def make_observations(start: date, tmax: list[float]) -> list[DailyObservation]:
     return [DailyObservation(day=start + timedelta(days=i), tmax_c=t) for i, t in enumerate(tmax)]
+
+
+@pytest.fixture(autouse=True)
+def _in_memory_farms():
+    """Keep API tests off the real SQLite file."""
+    from app.api.dependencies import get_farm_repository
+    from app.main import app
+    from app.repositories.farms import InMemoryFarmRepository
+
+    store = InMemoryFarmRepository()
+    app.dependency_overrides[get_farm_repository] = lambda: store
+    yield
+    app.dependency_overrides.pop(get_farm_repository, None)

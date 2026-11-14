@@ -20,6 +20,7 @@ class AdviceEntry(BaseModel):
     levels: list[RiskLevel]
     text_en: str
     text_ur: str | None = None
+    ur_reviewed: bool = False
     source: str
 
 
@@ -39,7 +40,8 @@ class AdviceRepository:
             for e in self._entries:
                 if e.risk == risk and level in e.levels and e.crop in (crop.value, "*"):
                     tips.append(AdviceTip(
-                        risk=risk, level=level, text_en=e.text_en, text_ur=e.text_ur, source=e.source
+                        risk=risk, level=level, text_en=e.text_en, text_ur=e.text_ur, ur_reviewed=e.ur_reviewed,
+                        source=e.source,
                     ))
         return tips[:MAX_TIPS]
 

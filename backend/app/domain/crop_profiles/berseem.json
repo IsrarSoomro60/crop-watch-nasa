@@ -71,7 +71,7 @@
   ],
   "evidence_gaps": [
     "No numeric heat limit found; heat is not assessed.",
-    "Drought, waterlogging and disease thresholds are not yet sourced.",
+    "Waterlogging and disease thresholds are not yet sourced (drought uses the FAO-56 water balance).",
     "Berseem has no row in FAO-56 Table 11; stage lengths need a local source, so growth stages and water use are not calculated."
   ],
   "stage_lengths_source": null,
@@ -81,5 +81,11 @@
     "end": 0.85,
     "source": "FAO-56 Table 12, https://www.fao.org/4/x0490e/x0490e0b.htm ('Clover hay, Berseem', averaged cutting effects)",
     "notes": "Not used until stage lengths are known."
+  },
+  "water_stress": {
+    "zr_max_m": 0.9,
+    "p": 0.5,
+    "source": "FAO-56 Table 22, https://www.fao.org/4/x0490e/x0490e0e.htm ('Clover hay, Berseem', Zr 0.6-0.9 m)",
+    "notes": "Larger Zr of the FAO range, which FAO-56 footnote 1 recommends for modelling soil water stress. Not used until berseem stage lengths exist."
   }
 }

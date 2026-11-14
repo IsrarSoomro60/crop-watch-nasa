@@ -9,6 +9,7 @@ from app.services.risk.risk_calculator import area_weighted_risk
 from app.services.risk.risk_engine import RiskEngine
 from app.services.rotation.ground_cover import ground_cover
 from app.services.water.crop_water import rotation_water
+from app.services.water.water_balance import Site
 
 
 class RotationEvaluator:
@@ -25,8 +26,9 @@ class RotationEvaluator:
         soil_texture: str | None = None,
         water_fallback: dict | None = None,
     ) -> RotationEvaluation:
+        site = None if latitude is None else Site(latitude, elevation_m or 0.0, soil_texture)
         results = [
-            self._engine.assess(self._profiles.get(season.crop), season, observations)
+            self._engine.assess(self._profiles.get(season.crop), season, observations, site)
             for season in rotation.seasons
         ]
         areas = [s.area_hectares for s in rotation.seasons]

@@ -158,7 +158,8 @@
     }
   ],
   "notes": [
-    "Managed flooding in rice is not harmful waterlogging; waterlogging risk is not applied the same way as for upland crops."
+    "Managed flooding in rice is not harmful waterlogging; waterlogging risk is not applied the same way as for upland crops.",
+    "Drought is not assessed with the FAO-56 rainfed water balance: paddy rice is kept flooded (FAO-56 Table 22 p = 0.20 of saturation)."
   ],
   "evidence_gaps": [
     "Temperature limits are provisional starting values from the team research brief; not tuned to local varieties.",

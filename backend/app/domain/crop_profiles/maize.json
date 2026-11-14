@@ -171,7 +171,7 @@
   "evidence_gaps": [
     "Temperature limits are provisional starting values from the team research brief; not tuned to local varieties.",
     "Stage lengths are FAO-56 Table 11 general values, scaled to each season; FAO says they 'may vary substantially' by region and variety and local data should be preferred.",
-    "Drought, waterlogging and disease thresholds are not yet sourced.",
+    "Waterlogging and disease thresholds are not yet sourced (drought uses the FAO-56 water balance).",
     "No thresholds for the late season (maturity) yet."
   ],
   "stage_lengths_source": "FAO-56 Table 11, 'Maize (grain)', planted June, region 'Nigeria (humid)' (125 days); the 'India (dry, cool)' row has identical lengths. https://www.fao.org/4/x0490e/x0490e0b.htm",
@@ -181,5 +181,11 @@
     "end": 0.35,
     "source": "FAO-56 Table 12, https://www.fao.org/4/x0490e/x0490e0b.htm ('Maize, Field (grain)'; Kc ini from the cereals group)",
     "notes": "Kc end 0.35 is for harvest after field drying of the grain (0.60 at high grain moisture)."
+  },
+  "water_stress": {
+    "zr_max_m": 1.7,
+    "p": 0.55,
+    "source": "FAO-56 Table 22, https://www.fao.org/4/x0490e/x0490e0e.htm ('Maize, Field (grain)', Zr 1.0-1.7 m)",
+    "notes": "Larger Zr of the FAO range, which FAO-56 footnote 1 recommends for modelling soil water stress."
   }
 }

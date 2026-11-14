@@ -10,13 +10,18 @@ the optimal edge (`warning`) = Moderate; at or beyond the critical limit = High.
 
 from collections import defaultdict
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from app.domain import scoring_config as cfg
 from app.repositories.advice import AdviceRepository, get_advice_repository
-from app.schemas.crop import CropProfile, RiskLevel, RiskType, StageType, Threshold
+from app.schemas.crop import CropProfile, RiskLevel, RiskType, Threshold
 from app.schemas.environment import DailyObservation
 from app.schemas.rotation import CropRiskResult, CropSeason
 from app.services.risk.risk_calculator import crop_risk
+from app.services.stages import stage_spans, stage_timeline  # noqa: F401  (re-exported)
+
+if TYPE_CHECKING:
+    from app.services.water.water_balance import Site
 
 # Risks where a HIGH value is harmful; the others (cold, drought) are harmful when LOW.
 _HIGH_IS_BAD = {RiskType.HEAT, RiskType.WATERLOGGING, RiskType.DISEASE}
@@ -56,35 +61,6 @@ def apply_min_duration(severities: list[float], min_days: int | None) -> list[fl
     return result
 
 
-def stage_timeline(profile: CropProfile, season_days: int) -> list[StageType | None]:
-    """Assign a growth stage to each season day, or None if stage lengths are unknown.
-
-    Reference lengths (e.g. FAO-56 Table 11) are scaled proportionally to the
-    actual sowing-to-harvest length, keeping each stage's share of the season.
-    """
-    spans = stage_spans(profile, season_days)
-    if spans is None:
-        return [None] * season_days
-    timeline: list[StageType | None] = []
-    for stage_type, start, end in spans:
-        timeline.extend([stage_type] * (end - start))
-    return timeline
-
-
-def stage_spans(profile: CropProfile, season_days: int) -> list[tuple[StageType, int, int]] | None:
-    """(stage, first day index, end index exclusive) per stage, scaled to the season; None if unknown."""
-    if not profile.stages or any(s.approx_days is None for s in profile.stages):
-        return None
-    total = sum(s.approx_days for s in profile.stages)  # type: ignore[misc]
-    spans, start, elapsed = [], 0, 0
-    for stage in profile.stages:
-        elapsed += stage.approx_days  # type: ignore[operator]
-        end = round(elapsed * season_days / total)
-        spans.append((stage.stage_type, start, end))
-        start = end
-    return spans
-
-
 def _has_values(t: Threshold) -> bool:
     return t.warning is not None or t.critical is not None
 
@@ -117,7 +93,10 @@ class RiskEngine:
         profile: CropProfile,
         season: CropSeason,
         observations: list[DailyObservation],
+        site: "Site | None" = None,
     ) -> CropRiskResult:
+        from app.services.water.water_balance import drought_severities  # local: water imports risk helpers
+
         season_days = (season.harvest_date - season.sowing_date).days + 1
         days = [season.sowing_date + timedelta(days=i) for i in range(season_days)]
         by_day = {o.day: o for o in observations}
@@ -164,6 +143,10 @@ class RiskEngine:
         if missing:
             gaps.append(f"No environmental observations for {missing} of {season_days} season days.")
 
+        drought = drought_severities(profile, season.sowing_date, season_days, observations, site) if site else None
+        if drought is not None:
+            gaps.append(drought[1])
+
         risks: dict[RiskType, float] = {}
         levels: dict[RiskType, RiskLevel | None] = {}
         high_days: dict[RiskType, int] = {}
@@ -172,16 +155,21 @@ class RiskEngine:
             severities: list[float] = []
             min_days: int | None = None
             assessed = False
-            for day, stage in zip(days, timeline, strict=True):
-                threshold = stage_thresholds.get((stage, risk)) if stage else season_wide.get(risk)
-                obs = by_day.get(day)
-                value = getattr(obs, threshold.variable, None) if threshold and obs else None
-                if threshold is None or value is None:
-                    severities.append(cfg.SEVERITY_NONE)
-                    continue
-                assessed = True
-                min_days = threshold.min_duration_days
-                severities.append(daily_severity(value, threshold, risk))
+            if risk == RiskType.DROUGHT and drought is not None:
+                # Water-balance drought (FAO-56 ch. 8) replaces threshold lookup.
+                assessed = any(s is not None for s in drought[0])
+                severities = [cfg.SEVERITY_NONE if s is None else s for s in drought[0]]
+            else:
+                for day, stage in zip(days, timeline, strict=True):
+                    threshold = stage_thresholds.get((stage, risk)) if stage else season_wide.get(risk)
+                    obs = by_day.get(day)
+                    value = getattr(obs, threshold.variable, None) if threshold and obs else None
+                    if threshold is None or value is None:
+                        severities.append(cfg.SEVERITY_NONE)
+                        continue
+                    assessed = True
+                    min_days = threshold.min_duration_days
+                    severities.append(daily_severity(value, threshold, risk))
             severities = apply_min_duration(severities, min_days)
             risks[risk] = round(crop_risk(severities, weights, w_max), 2)
             levels[risk] = _LEVEL_BY_SEVERITY[max(severities, default=0.0)] if assessed else None
@@ -191,6 +179,7 @@ class RiskEngine:
         unsourced = sorted(
             {t.risk.value for s in profile.stages for t in s.thresholds} - {r.value for r in
              {t.risk for s in profile.stages for t in s.thresholds if _has_values(t)}}
+            - ({RiskType.DROUGHT.value} if drought is not None else set())
         )
         if unsourced:
             gaps.append(f"No threshold values yet (risk not scored): {', '.join(unsourced)}.")

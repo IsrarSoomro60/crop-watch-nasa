@@ -1,0 +1,18 @@
+# Run the whole app locally: docker compose up --build  ->  http://localhost:8080
+services:
+  backend:
+    build: ./backend
+    env_file:
+      - path: backend/.env
+        required: false
+    volumes:
+      - farm-data:/app/var
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  farm-data:

@@ -16,7 +16,7 @@ from datetime import date, timedelta
 from app.schemas.crop import CropProfile
 from app.schemas.environment import DailyObservation
 from app.schemas.rotation import CropSeason, RotationWater, SeasonWater
-from app.services.risk.risk_engine import stage_spans
+from app.services.stages import stage_spans
 from app.services.water.et0 import daily_et0
 
 FAO_MANUAL_3 = "FAO Irrigation Water Management Training Manual 3, ch. 4, https://www.fao.org/4/s2022e/s2022e08.htm"

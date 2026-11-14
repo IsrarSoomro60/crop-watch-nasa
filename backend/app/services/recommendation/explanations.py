@@ -52,6 +52,13 @@ def explain(r: RankedRotation, current: RankedRotation, profiles: CropProfileRep
             if profs[c].is_legume:
                 benefits.append(f"Adds a legume ({_name(c)}); legumes can fix atmospheric nitrogen. This is an "
                                 "indicator for soil health, not proof of improvement.")
+        inc, cinc = r.evaluation.income, current.evaluation.income
+        if inc and cinc and inc.basis == cinc.basis:
+            mine = inc.net_income if inc.basis == "net" else inc.gross_revenue
+            theirs = cinc.net_income if cinc.basis == "net" else cinc.gross_revenue
+            if mine is not None and theirs and mine > theirs:
+                benefits.append(f"About {mine - theirs:,.0f} {inc.currency} more {inc.basis} income per cycle "
+                                f"({(mine - theirs) / theirs:.0%} above the current rotation).")
         g, cg = r.evaluation.ground_cover, current.evaluation.ground_cover
         if g and cg and g.bare_soil_days < cg.bare_soil_days:
             benefits.append(f"{cg.bare_soil_days - g.bare_soil_days} fewer bare-soil days per year.")
@@ -76,7 +83,13 @@ def explain(r: RankedRotation, current: RankedRotation, profiles: CropProfileRep
     gaps: list[str] = []
     if r.missing_dimensions:
         gaps.append(f"Not scored: missing {', '.join(r.missing_dimensions)} while other rotations have it.")
-    gaps.append("Income not assessed (no yield, price or cost data yet).")
+    inc = r.evaluation.income
+    if inc is None or inc.gross_revenue is None:
+        gaps.append("Income not assessed: a crop has no yield or price (enter local values).")
+    elif inc.basis == "gross":
+        gaps.append("Income is gross revenue only (no production costs entered).")
+    if inc and any(s.yield_source and s.yield_source != "farmer" for s in inc.seasons):
+        gaps.append("Yields and prices are FAOSTAT national averages, not local figures.")
     for c in r.evaluation.crop_results:
         missing = [k.value for k, v in c.levels.items() if v is None]
         if missing:

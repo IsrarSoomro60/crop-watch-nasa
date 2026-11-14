@@ -24,12 +24,14 @@ from app.schemas.recommendation import (
 )
 from app.schemas.rotation import Rotation, RotationEvaluation
 from app.schemas.soil import SoilInfo
+from app.services.income.income import income_scores, rotation_income
 from app.services.recommendation.explanations import explain
 from app.services.rotation.rotation_evaluator import RotationEvaluator
 from app.services.rotation.scoring import normalise_weights, preference_score, risk_to_resilience
 
 LIMITATIONS = [
-    "Income needs local yield, price and cost data; it is not computed yet.",
+    "Income defaults are FAOSTAT national averages for Pakistan (yield, producer price), not local or current "
+    "market prices, and exclude costs unless you enter them; enter your own values for a fair comparison.",
     "Water score compares estimated irrigation need only (lowest need = 1.0). Lower water use is not better "
     "water productivity if yield also falls.",
     "Soil-health indicator = average of legume share and ground cover (share of the year under a growing crop). "
@@ -98,6 +100,9 @@ class RecommendationEngine:
             self._evaluator.evaluate(r, observations, lat, elevation_m, texture, water_fallback) for r in rotations
         ]
         water_scores = water_scores_for(evaluations)
+        for rotation, evaluation in zip(rotations, evaluations, strict=True):
+            evaluation.income = rotation_income(rotation, request.economics)
+        inc_scores = income_scores([e.income for e in evaluations])  # type: ignore[misc]
 
         coverage = [assessed_risks(e) for e in evaluations]
         if coverage[0]:
@@ -117,6 +122,7 @@ class RecommendationEngine:
             all_scores.append(DimensionScores(
                 soil_health=self._soil_health(rotation, evaluation),
                 water=water_scores[len(all_scores)],
+                income=inc_scores[len(all_scores)],
                 resilience=resilience,
             ))
 
