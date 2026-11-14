@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "description": "Advice lookup keyed by crop, risk and level. crop '*' matches every crop.",
+    "rules": [
+      "Add an entry only with a cited or expert-reviewed source.",
+      "text_ur stays null until translated and reviewed by a native Urdu speaker."
+    ]
+  },
+  "entries": [
+    {
+      "crop": "wheat",
+      "risk": "heat",
+      "levels": ["high"],
+      "text_en": "Irrigate lightly to cool the crop.",
+      "text_ur": null,
+      "source": "Crop-Watch AI research brief, section 2 worked example (2026-11-11); needs agronomist review"
+    },
+    {
+      "crop": "wheat",
+      "risk": "heat",
+      "levels": ["high"],
+      "text_en": "Hold back nitrogen fertilizer for now.",
+      "text_ur": null,
+      "source": "Crop-Watch AI research brief, section 2 worked example (2026-11-11); needs agronomist review"
+    },
+    {
+      "crop": "*",
+      "risk": "drought",
+      "levels": ["moderate", "high"],
+      "text_en": "Check irrigation. Most fields here are irrigated, so dry satellite readings alone do not prove drought.",
+      "text_ur": null,
+      "source": "Crop-Watch AI research brief, section 5 (region and soil limitation)"
+    }
+  ]
+}

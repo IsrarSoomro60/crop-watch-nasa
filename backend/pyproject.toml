@@ -1,0 +1,30 @@
+[project]
+name = "crop-watch-backend"
+version = "0.1.0"
+description = "Crop-Watch AI backend: crop rotation risk and tradeoff comparison API"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.7",
+    "httpx>=0.28.1",
+    "pydantic>=2.12",
+    "pydantic-settings>=2.16.3",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I"]
+# FastAPI's Depends()/Query() in argument defaults is the framework's intended pattern.
+ignore = ["B008"]

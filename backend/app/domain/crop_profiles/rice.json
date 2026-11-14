@@ -1,0 +1,178 @@
+{
+  "crop": "rice",
+  "display_name": "Rice",
+  "family": "Poaceae",
+  "is_legume": false,
+  "season": "kharif",
+  "stages": [
+    {
+      "name": "Initial (FAO-56: sowing to ~10% ground cover)",
+      "stage_type": "establishment",
+      "approx_days": 30,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 33,
+          "critical": 35,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO rice critical temperatures table",
+            "Jagadish et al. 2007 (rice heat sterility)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "FAO: above 33 C at tillering is risky; Jagadish et al. 2007: ~35 C at flowering causes sterility. Applying 33/35 to every listed stage is the brief's simplification."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 15,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO rice critical temperatures table",
+            "Jagadish et al. 2007 (rice heat sterility)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Conflict: the brief's source table says below 10 C; its rules table uses 15 C. Needs confirmation."
+        },
+        {
+          "risk": "drought",
+          "variable": "soil_moisture",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "name": "Crop development (FAO-56: ~10% cover to effective full cover)",
+      "stage_type": "vegetative",
+      "approx_days": 30,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 33,
+          "critical": 35,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO rice critical temperatures table",
+            "Jagadish et al. 2007 (rice heat sterility)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "FAO: above 33 C at tillering is risky; Jagadish et al. 2007: ~35 C at flowering causes sterility. Applying 33/35 to every listed stage is the brief's simplification."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 15,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO rice critical temperatures table",
+            "Jagadish et al. 2007 (rice heat sterility)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Conflict: the brief's source table says below 10 C; its rules table uses 15 C. Needs confirmation."
+        },
+        {
+          "risk": "drought",
+          "variable": "soil_moisture",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        },
+        {
+          "risk": "disease",
+          "variable": "relative_humidity_pct",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "name": "Mid-season (FAO-56: full cover to start of maturity; covers flowering and most grain/pod filling)",
+      "stage_type": "reproductive",
+      "approx_days": 60,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 33,
+          "critical": 35,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO rice critical temperatures table",
+            "Jagadish et al. 2007 (rice heat sterility)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Rice can be especially sensitive to heat during flowering. FAO: above 33 C at tillering is risky; Jagadish et al. 2007: ~35 C at flowering causes sterility. Applying 33/35 to every listed stage is the brief's simplification. Brief gives this limit for flowering only; it is applied to the whole FAO mid-season, which also covers grain/pod filling."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 15,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO rice critical temperatures table",
+            "Jagadish et al. 2007 (rice heat sterility)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Conflict: the brief's source table says below 10 C; its rules table uses 15 C. Needs confirmation. Brief gives this limit for flowering only; it is applied to the whole FAO mid-season, which also covers grain/pod filling."
+        },
+        {
+          "risk": "disease",
+          "variable": "relative_humidity_pct",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "name": "Late season (FAO-56: start of maturity to harvest)",
+      "stage_type": "maturity",
+      "approx_days": 30,
+      "thresholds": []
+    }
+  ],
+  "notes": [
+    "Managed flooding in rice is not harmful waterlogging; waterlogging risk is not applied the same way as for upland crops."
+  ],
+  "evidence_gaps": [
+    "Temperature limits are provisional starting values from the team research brief; not tuned to local varieties.",
+    "Stage lengths are FAO-56 Table 11 general values, scaled to each season; FAO says they 'may vary substantially' by region and variety and local data should be preferred.",
+    "Drought, waterlogging and disease thresholds are not yet sourced.",
+    "No thresholds for the late season (maturity) yet."
+  ],
+  "stage_lengths_source": "FAO-56 Table 11, 'Rice', planted Dec; May, region 'Tropics; Mediterranean' (150 days). No Pakistan row exists. https://www.fao.org/4/x0490e/x0490e0b.htm",
+  "kc": {
+    "ini": 1.05,
+    "mid": 1.2,
+    "end": 0.75,
+    "source": "FAO-56 Table 12, https://www.fao.org/4/x0490e/x0490e0b.htm ('Rice')",
+    "notes": "FAO gives Kc end 0.90-0.60; the midpoint 0.75 is used."
+  },
+  "water_regime": "paddy"
+}

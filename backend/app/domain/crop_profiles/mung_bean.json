@@ -1,0 +1,155 @@
+{
+  "crop": "mung_bean",
+  "display_name": "Mung bean",
+  "family": "Fabaceae",
+  "is_legume": true,
+  "season": "zaid/kharif",
+  "stages": [
+    {
+      "name": "Initial (FAO-56: sowing to ~10% ground cover)",
+      "stage_type": "establishment",
+      "approx_days": 20,
+      "thresholds": [
+        {
+          "risk": "cold",
+          "variable": "tmean_c",
+          "warning": null,
+          "critical": 15,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "Feedipedia: Mung bean (Vigna radiata), citing Mogotsi 2006 (PROTA), https://www.feedipedia.org/node/235"
+          ],
+          "notes": "Source: optimal about 28-30 C and 'always above 15 C'. Read here as daily mean temperature; the source does not say mean or minimum."
+        },
+        {
+          "risk": "waterlogging",
+          "variable": "precipitation_mm",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "name": "Crop development (FAO-56: ~10% cover to effective full cover)",
+      "stage_type": "vegetative",
+      "approx_days": 30,
+      "thresholds": [
+        {
+          "risk": "cold",
+          "variable": "tmean_c",
+          "warning": null,
+          "critical": 15,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "Feedipedia: Mung bean (Vigna radiata), citing Mogotsi 2006 (PROTA), https://www.feedipedia.org/node/235"
+          ],
+          "notes": "Source: optimal about 28-30 C and 'always above 15 C'. Read here as daily mean temperature; the source does not say mean or minimum."
+        },
+        {
+          "risk": "waterlogging",
+          "variable": "precipitation_mm",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": "Vulnerable to prolonged waterlogging."
+        }
+      ]
+    },
+    {
+      "name": "Mid-season (FAO-56: full cover to start of maturity; covers flowering and most grain/pod filling)",
+      "stage_type": "reproductive",
+      "approx_days": 30,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 35,
+          "critical": 40,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "Frontiers in Genetics (2023) 14:1206451: temperatures above 40 C cause terminal heat stress at the reproductive stage, https://www.frontiersin.org/journals/genetics/articles/10.3389/fgene.2023.1206451/full",
+            "Scientia Horticulturae (2016): >40/28 C at the reproductive stage highly detrimental to flower production and pod set, https://www.sciencedirect.com/science/article/abs/pii/S0304423816305350",
+            "Physiology of Plants / Russ. J. Plant Physiol. (2024): grows most efficiently at 27-35 C; thermotolerant in vegetative phase, sensitive in reproductive phase, https://link.springer.com/article/10.1134/S1021443724605421"
+          ],
+          "notes": "Critical 40 C at the reproductive stage is stated by two peer-reviewed studies. Warning 35 C is the top of the 27-35 C efficient-growth range, read as daily maximum."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmean_c",
+          "warning": null,
+          "critical": 15,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "Feedipedia: Mung bean (Vigna radiata), citing Mogotsi 2006 (PROTA), https://www.feedipedia.org/node/235"
+          ],
+          "notes": "Source: optimal about 28-30 C and 'always above 15 C'. Read here as daily mean temperature; the source does not say mean or minimum."
+        },
+        {
+          "risk": "disease",
+          "variable": "relative_humidity_pct",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        },
+        {
+          "risk": "drought",
+          "variable": "soil_moisture",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": "Mung bean can be vulnerable to drought during pod filling."
+        }
+      ]
+    },
+    {
+      "name": "Late season (FAO-56: start of maturity to harvest)",
+      "stage_type": "maturity",
+      "approx_days": 20,
+      "thresholds": [
+        {
+          "risk": "cold",
+          "variable": "tmean_c",
+          "warning": null,
+          "critical": 15,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "Feedipedia: Mung bean (Vigna radiata), citing Mogotsi 2006 (PROTA), https://www.feedipedia.org/node/235"
+          ],
+          "notes": "Source: optimal about 28-30 C and 'always above 15 C'. Read here as daily mean temperature; the source does not say mean or minimum."
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Legume: may serve as a soil-health indicator, which does not by itself prove improved soil health."
+  ],
+  "evidence_gaps": [
+    "Heat limit applies to the mid-season (flowering and pod filling) only; sources describe mung bean as heat-tolerant in the vegetative phase.",
+    "Drought, waterlogging and disease thresholds are not yet sourced (source notes sensitivity to waterlogging and seed spoilage from high moisture at maturity).",
+    "Stage lengths are FAO-56 Table 11 general values, scaled to each season; FAO says they 'may vary substantially' by region and variety and local data should be preferred."
+  ],
+  "stage_lengths_source": "FAO-56 Table 11, 'Green gram, cowpeas', planted March, region 'Mediterranean' (110 days). https://www.fao.org/4/x0490e/x0490e0b.htm",
+  "kc": {
+    "ini": 0.4,
+    "mid": 1.05,
+    "end": 0.35,
+    "source": "FAO-56 Table 12, https://www.fao.org/4/x0490e/x0490e0b.htm ('Green Gram and Cowpeas'; Kc ini from the legume group)",
+    "notes": "Kc end 0.35 is FAO's value for harvest dry (0.60 if harvested fresh)."
+  }
+}
