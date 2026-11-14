@@ -3,6 +3,7 @@ import type {
   EnvironmentalData,
   HistoryRequest,
   HistoryResult,
+  CropProfileSummary,
   QuickCheckRequest,
   QuickCheckResult,
   Recommendation,
@@ -39,6 +40,7 @@ export const api = {
     ),
   history: (body: HistoryRequest) =>
     request<HistoryResult>("/history", { method: "POST", body: JSON.stringify(body) }),
+  cropProfiles: () => request<CropProfileSummary[]>("/rotations/crop-profiles"),
   quickCheck: (body: QuickCheckRequest) =>
     request<QuickCheckResult>("/quick-check", { method: "POST", body: JSON.stringify(body) }),
   compareRotations: (body: ComparisonRequest) =>

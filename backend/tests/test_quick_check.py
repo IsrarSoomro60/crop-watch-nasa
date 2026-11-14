@@ -70,3 +70,32 @@ def test_stage_from_sowing_date_and_fallbacks():
     assert no_stage.stage is None
     assert no_stage.overall == RiskLevel.HIGH  # rice heat limit is the same in every stage that sets one
     assert any("sowing date" in n for n in no_stage.notes)
+
+
+def test_unsupported_stage_is_rejected_before_any_download():
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    body = {"location": {"latitude": 30.2, "longitude": 71.47}, "crop": "berseem", "stage": "reproductive"}
+    r = TestClient(app).post("/api/quick-check", json=body)
+    assert r.status_code == 422
+    assert "supported stages: establishment, vegetative" in r.text
+
+
+def test_missing_thresholds_report_not_assessed_never_low():
+    # Weather with no temperature limits that apply: every risk is not assessed, overall is null.
+    req = QuickCheckRequest(location=MULTAN, crop=CropName.WHEAT, stage=StageType.MATURITY)
+    result = _run(req, _days([45, 45, 45, 45, 45, 45, 45], tmin=-10))  # extreme, but wheat maturity has no limits
+
+    assert result.overall is None and result.cards == [] and result.assessed == []
+    assert set(result.not_assessed) == set(RiskType)
+    assert any(n.startswith("Not assessed:") and "not a 'no risk' result" in n for n in result.notes)
+
+
+def test_assessed_lists_only_risks_checked():
+    req = QuickCheckRequest(location=MULTAN, crop=CropName.WHEAT, stage=StageType.VEGETATIVE)
+    result = _run(req, _days([20] * 7, tmin=5))
+    assert result.overall == RiskLevel.LOW
+    assert set(result.assessed) == {RiskType.HEAT, RiskType.COLD}
+    assert RiskType.DISEASE in result.not_assessed and not any(n.startswith("Not assessed:") for n in result.notes)

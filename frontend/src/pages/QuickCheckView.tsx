@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdviceList, DataNoteLine, ErrorBox, LevelBadge, List } from "../components/common";
 import { CROPS, RISK_LABEL, STAGES, cropLabel, fmt, stageLabel } from "../lib/labels";
 import { api } from "../services/api";
@@ -14,6 +14,22 @@ export default function QuickCheckView({ location, urdu }: { location: Location;
   const [result, setResult] = useState<QuickCheckResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Growth stages each crop's profile actually defines (only these can be checked).
+  const [cropStages, setCropStages] = useState<Partial<Record<CropName, StageType[]>>>({});
+
+  useEffect(() => {
+    api
+      .cropProfiles()
+      .then((ps) => setCropStages(Object.fromEntries(ps.map((p) => [p.crop, p.stages.map((s) => s.stage_type)]))))
+      .catch(() => setCropStages({}));
+  }, []);
+
+  const stagesForCrop = STAGES.filter((s) => cropStages[crop]?.includes(s.value));
+  useEffect(() => {
+    // Switching crop: keep the picked stage only if the new crop has it.
+    if (stagesForCrop.length && !stagesForCrop.some((s) => s.value === stage)) setStage(stagesForCrop[0].value);
+  }, [crop, stagesForCrop, stage]);
+  const stageUnavailable = mode === "stage" && !stagesForCrop.some((s) => s.value === stage);
 
   async function run() {
     setLoading(true);
@@ -64,8 +80,13 @@ export default function QuickCheckView({ location, urdu }: { location: Location;
           ) : (
             <label className="field">
               Growth stage
-              <select value={stage} onChange={(e) => setStage(e.target.value as StageType)}>
-                {STAGES.map((s) => (
+              <select
+                value={stage}
+                disabled={!stagesForCrop.length}
+                onChange={(e) => setStage(e.target.value as StageType)}
+              >
+                {!stagesForCrop.length && <option value={stage}>Loading stages…</option>}
+                {stagesForCrop.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
                   </option>
@@ -73,7 +94,7 @@ export default function QuickCheckView({ location, urdu }: { location: Location;
               </select>
             </label>
           )}
-          <button className="primary" onClick={run} disabled={loading}>
+          <button className="primary" onClick={run} disabled={loading || stageUnavailable}>
             {loading ? "Checking…" : "Check risk"}
           </button>
         </div>
@@ -91,8 +112,19 @@ export default function QuickCheckView({ location, urdu }: { location: Location;
               <LevelBadge level={result.overall} big />
             </div>
             <p className="muted small">{result.stage_basis}</p>
-            {result.cards.length === 0 ? (
-              <p>No risk above Low in the last 7 days.</p>
+            {result.overall === null ? (
+              <p className="note">
+                <strong>Not assessed.</strong>{" "}
+                {result.notes
+                  .find((n) => n.startsWith("Not assessed:"))
+                  ?.replace(/^Not assessed:\s*(.)/, (_, first: string) => first.toUpperCase()) ??
+                  "No supported limit could be checked. This is not a 'no risk' result."}
+              </p>
+            ) : result.cards.length === 0 ? (
+              <p>
+                No risk above Low in the last 7 days for the risks checked:{" "}
+                {result.assessed.map((r) => RISK_LABEL[r]).join(", ")}.
+              </p>
             ) : (
               <div className="grid">
                 {result.cards.map((c) => (
@@ -135,7 +167,7 @@ export default function QuickCheckView({ location, urdu }: { location: Location;
                 </div>
               ))}
             </div>
-            <List items={result.notes} />
+            <List items={result.notes.filter((n) => !n.startsWith("Not assessed:"))} />
             <DataNoteLine note={result.data_note} />
           </section>
         </>

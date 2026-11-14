@@ -8,6 +8,7 @@ from app.schemas.rotation import Rotation, RotationEvaluation
 from app.services.history.vulnerability import risk_from_history
 from app.services.risk.risk_calculator import area_weighted_risk
 from app.services.risk.risk_engine import RiskEngine
+from app.services.rotation.cycle import cycle_years, per_year
 from app.services.rotation.ground_cover import ground_cover
 from app.services.water.crop_water import rotation_water
 from app.services.water.water_balance import Site
@@ -43,11 +44,12 @@ class RotationEvaluator:
             risk: round(area_weighted_risk([r.risks[risk] for r in results], areas), 2)
             for risk in RiskType
         }
-        return RotationEvaluation(
+        evaluation = RotationEvaluation(
             rotation_name=rotation.name,
             crop_results=results,
             area_weighted_risk=weighted,
             highest_crop_season_risk=max(r.max_risk for r in results),
+            cycle_years=cycle_years(rotation),
             assumptions=[PROVISIONAL_NOTE],
             water=None if latitude is None else rotation_water(
                 {s.crop: self._profiles.get(s.crop) for s in rotation.seasons},
@@ -55,3 +57,8 @@ class RotationEvaluator:
             ),
             ground_cover=ground_cover(rotation),
         )
+        if evaluation.water is not None:
+            evaluation.water.irrigation_need_m3_per_year = per_year(
+                evaluation.water.irrigation_need_m3, evaluation.cycle_years
+            )
+        return evaluation

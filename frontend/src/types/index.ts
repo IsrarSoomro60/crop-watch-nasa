@@ -67,8 +67,11 @@ export interface SeasonIncome {
 export interface RotationIncome {
   currency: string;
   seasons: SeasonIncome[];
-  gross_revenue: number | null;
-  net_income: number | null;
+  gross_revenue: number | null; // before costs, whole cycle
+  net_income: number | null; // after the farmer's costs, whole cycle
+  cycle_years: number;
+  gross_revenue_per_year: number | null;
+  net_income_per_year: number | null;
   basis: "net" | "gross";
 }
 
@@ -111,15 +114,18 @@ export interface SeasonWater {
 
 export interface RotationWater {
   seasons: SeasonWater[];
-  irrigation_need_m3: number | null;
+  irrigation_need_m3: number | null; // whole cycle
+  irrigation_need_m3_per_year: number | null; // what rotations are compared on
   method: string[];
 }
 
 export interface GroundCover {
   cycle_start: string;
   cycle_end: string;
-  bare_soil_days: number;
+  bare_soil_days: number; // whole cycle
   cover_fraction: number; // 0-1, growing crops only
+  cycle_years: number;
+  bare_soil_days_per_year: number;
 }
 
 export interface SoilLayer {
@@ -152,6 +158,7 @@ export interface RotationEvaluation {
   crop_results: CropRiskResult[];
   area_weighted_risk: Record<RiskType, number>;
   highest_crop_season_risk: number;
+  cycle_years: number; // water, income and bare soil are compared per year
   assumptions: string[];
   water: RotationWater | null;
   ground_cover: GroundCover | null;
@@ -221,6 +228,7 @@ export interface Recommendation {
   resilience_risks: RiskType[]; // risks the resilience comparison is based on
   data_note: DataNote | null;
   soil: SoilInfo | null;
+  regional_water: RegionalWater | null; // GRACE context, not scored
 }
 
 // ---- Historical vulnerability (POST /api/history) ----
@@ -282,6 +290,13 @@ export interface HistoryResult {
 
 // ---- Quick check (POST /api/quick-check) ----
 
+/** Subset of GET /api/rotations/crop-profiles used by the frontend. */
+export interface CropProfileSummary {
+  crop: CropName;
+  display_name: string;
+  stages: { stage_type: StageType }[];
+}
+
 export interface QuickCheckRequest {
   location: Location;
   crop: CropName;
@@ -310,6 +325,7 @@ export interface QuickCheckResult {
   stage_basis: string;
   overall: RiskLevel | null;
   cards: RiskCard[];
+  assessed: RiskType[]; // risks checked against a limit
   not_assessed: RiskType[];
   advice: AdviceTip[];
   last_7_days: DayStrip[];
@@ -341,13 +357,26 @@ export interface GraceSummary {
   cell_lat: number;
   cell_lon: number;
   trend_cm_per_year: number | null;
+  recent_trend_cm_per_year: number | null;
+  recent_trend_years: number | null;
   latest: GracePoint | null;
   series: GracePoint[];
+  source: string;
+}
+
+export interface RegionalWater {
+  trend_cm_per_year: number | null;
+  recent_trend_cm_per_year: number | null;
+  recent_trend_years: number | null;
+  first_month: string;
+  latest: GracePoint;
+  message: string;
+  source: string;
 }
 
 export interface SatelliteData {
-  district: string;
-  distance_km: number;
+  district: string | null; // demo district with NDVI/soil-moisture samples
+  distance_km: number | null;
   ndvi: NdviPoint[];
   soil_moisture: SoilMoisturePoint[];
   grace: GraceSummary | null;

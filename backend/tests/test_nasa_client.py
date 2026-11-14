@@ -63,3 +63,29 @@ def test_falls_back_to_sample_when_nasa_unreachable(tmp_path):
 
     with pytest.raises(httpx.ConnectError):  # no sample for this cell
         asyncio.run(client.fetch_daily(10.0, 10.0, date(2026, 3, 1), date(2026, 3, 1)))
+
+
+LONG = {"properties": {"parameter": {"T2M_MAX": {f"202603{d:02d}": 30.0 + d for d in range(1, 11)}}}}
+
+
+def test_longer_download_answers_shorter_request_and_survives_restart(tmp_path):
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(200, json=LONG)
+
+    settings = Settings(sample_data_dir=tmp_path, disk_cache=True, cache_dir=tmp_path / "cache")
+
+    def client(cache):
+        return NasaPowerClient(settings, http=httpx.AsyncClient(transport=httpx.MockTransport(handler)), cache=cache)
+
+    memory = _TTLCache()
+    asyncio.run(client(memory).fetch_daily(30.2, 71.47, date(2026, 3, 1), date(2026, 3, 10)))
+    short = asyncio.run(client(memory).fetch_daily(30.2, 71.47, date(2026, 3, 3), date(2026, 3, 4)))
+    assert len(calls) == 1 and short.from_cache
+    assert list(short.payload["properties"]["parameter"]["T2M_MAX"]) == ["20260303", "20260304"]
+
+    after_restart = asyncio.run(client(_TTLCache()).fetch_daily(30.2, 71.47, date(2026, 3, 2), date(2026, 3, 5)))
+    assert len(calls) == 1 and after_restart.from_cache  # read from the disk copy
+    assert len(after_restart.payload["properties"]["parameter"]["T2M_MAX"]) == 4

@@ -1,4 +1,5 @@
-from datetime import date
+import asyncio
+from datetime import date, timedelta
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -23,6 +24,39 @@ from app.services.soil.soilgrids import SoilGridsClient
 router = APIRouter(prefix="/history", tags=["history"])
 
 DEFAULT_YEARS = 20
+POWER_LAG_DAYS = 3  # POWER usually lags real time by 2-3 days
+
+
+def history_window(
+    seasons: list[CropSeason], start_year: int | None, end_year: int | None
+) -> tuple[int, int, date, date]:
+    today = date.today()
+    first = start_year or today.year - DEFAULT_YEARS - 1
+    last = end_year or today.year
+    if last < first:
+        raise HTTPException(status_code=422, detail="end_year must not be before start_year")
+    fetch_start, fetch_end = history_fetch_range(seasons, first, last)
+    return first, last, fetch_start, min(fetch_end, today)
+
+
+async def prefetch_history_weather(location: Location, seasons: list[CropSeason], nasa: NasaPowerClient) -> None:
+    """Download the weather run_history will need, so it can run alongside other downloads.
+
+    Failures are ignored here: run_history repeats the request and reports any error itself.
+    """
+    if not seasons:
+        return
+    _, _, start, end = history_window(seasons, None, None)
+    try:
+        await nasa.fetch_daily(location.latitude, location.longitude, start, end)
+    except httpx.HTTPError:
+        pass
+
+
+def likely_future(seasons: list[CropSeason]) -> list[CropSeason]:
+    """Seasons that probably end after the latest POWER day (decided exactly once weather is in)."""
+    cutoff = date.today() - timedelta(days=POWER_LAG_DAYS)
+    return [s for s in seasons if s.harvest_date > cutoff]
 
 
 async def soil_texture(client: SoilGridsClient, location: Location) -> str | None:
@@ -42,13 +76,8 @@ async def run_history(
     start_year: int | None = None,
     end_year: int | None = None,
 ) -> tuple[list[SeasonHistory], EnvironmentalData, int, int]:
-    today = date.today()
-    first = start_year or today.year - DEFAULT_YEARS - 1
-    last = end_year or today.year
-    if last < first:
-        raise HTTPException(status_code=422, detail="end_year must not be before start_year")
-    fetch_start, fetch_end = history_fetch_range(seasons, first, last)
-    env = await load_environmental_data(nasa, location.latitude, location.longitude, fetch_start, min(fetch_end, today))
+    first, last, fetch_start, fetch_end = history_window(seasons, start_year, end_year)
+    env = await load_environmental_data(nasa, location.latitude, location.longitude, fetch_start, fetch_end)
     latest = env.data_note.latest_observation_date
     elevation = env.data_note.elevation_m or 0.0
 
@@ -74,7 +103,12 @@ async def season_vulnerability(
     soil_client: SoilGridsClient = Depends(get_soil_client),
     profiles: CropProfileRepository = Depends(get_crop_profile_repository),
 ) -> HistoryResult:
-    texture = await soil_texture(soil_client, request.location)
+    # Soil and weather downloads don't depend on each other: run them at the same time.
+    texture, _ = await asyncio.gather(
+        soil_texture(soil_client, request.location),
+        prefetch_history_weather(request.location, request.seasons, nasa)
+        if request.start_year is None and request.end_year is None else asyncio.sleep(0),
+    )
     histories, env, first, last = await run_history(
         request.location, request.seasons, nasa, profiles, texture, request.start_year, request.end_year
     )

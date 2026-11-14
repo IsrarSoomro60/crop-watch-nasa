@@ -42,6 +42,18 @@ def make_observations(start: date, tmax: list[float]) -> list[DailyObservation]:
 
 
 @pytest.fixture(autouse=True)
+def _no_disk_cache_or_warm_up(monkeypatch):
+    """Tests never read or write the real cache folder, and never download at startup."""
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("DISK_CACHE", "false")
+    monkeypatch.setenv("WARM_UP_DEMO_DISTRICTS", "false")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture(autouse=True)
 def _in_memory_farms():
     """Keep API tests off the real SQLite file."""
     from app.api.dependencies import get_farm_repository

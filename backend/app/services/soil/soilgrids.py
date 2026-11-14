@@ -11,6 +11,7 @@ service cannot be reached (see scripts/fetch_sample_data.py).
 
 import json
 import math
+import time
 from pathlib import Path
 from typing import Any
 
@@ -30,7 +31,10 @@ _FIELDS = {
 SEARCH_STEP_DEG = 0.05  # ~5 km
 SAMPLE_MAX_KM = 25.0
 
-_cache: dict[tuple[float, float], SoilInfo] = {}
+# None = SoilGrids answered but had no soil data near the point (e.g. a city centre).
+_cache: dict[tuple[float, float], SoilInfo | None] = {}
+# Points where SoilGrids failed recently: (retry-after time, fallback answer).
+_failed: dict[tuple[float, float], tuple[float, SoilInfo | None]] = {}
 
 
 def distance_km(a: Location, b: Location) -> float:
@@ -137,13 +141,58 @@ class SoilGridsClient:
         key = (round(point.latitude, 3), round(point.longitude, 3))
         if key in _cache:
             return _cache[key]
+        found, saved = self._disk_get(key)
+        if found:
+            _cache[key] = saved
+            return saved
+        failed = _failed.get(key)
+        if failed is not None and failed[0] > time.monotonic():
+            return failed[1]  # SoilGrids failed recently: don't wait for it again yet
         try:
             info = await self._search(point)
         except httpx.HTTPError:
-            info = self._nearest_sample(point)
-        if info is not None and not info.from_sample:
-            _cache[key] = info
+            fallback = self._nearest_sample(point)
+            _failed[key] = (time.monotonic() + self._settings.soilgrids_retry_after_seconds, fallback)
+            return fallback
+        # Soil does not change, so both answers (data, or "no data here") are kept for good.
+        _cache[key] = info
+        self._disk_set(key, info)
         return info
+
+    # --- disk cache: one JSON file mapping "lat,lon" to a SoilInfo or null ---
+
+    def _disk_file(self) -> Path | None:
+        return self._settings.cache_dir / "soilgrids.json" if self._settings.disk_cache else None
+
+    def _disk_load(self) -> dict[str, Any]:
+        path = self._disk_file()
+        if path is None or not path.exists():
+            return {}
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+    def _disk_get(self, key: tuple[float, float]) -> tuple[bool, SoilInfo | None]:
+        data = self._disk_load()
+        name = f"{key[0]},{key[1]}"
+        if name not in data:
+            return False, None
+        return True, None if data[name] is None else SoilInfo.model_validate(data[name])
+
+    def _disk_set(self, key: tuple[float, float], info: SoilInfo | None) -> None:
+        path = self._disk_file()
+        if path is None:
+            return
+        data = self._disk_load()
+        data[f"{key[0]},{key[1]}"] = None if info is None else info.model_dump(mode="json")
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data), encoding="utf-8")
+            tmp.replace(path)
+        except OSError:
+            pass  # a cache write must never break a request
 
     async def _search(self, point: Location) -> SoilInfo | None:
         async def run(http: httpx.AsyncClient) -> SoilInfo | None:
@@ -156,7 +205,7 @@ class SoilGridsClient:
 
         if self._http is not None:
             return await run(self._http)
-        async with httpx.AsyncClient(timeout=self._settings.http_timeout_seconds) as http:
+        async with httpx.AsyncClient(timeout=self._settings.soilgrids_timeout_seconds) as http:
             return await run(http)
 
     def _nearest_sample(self, point: Location) -> SoilInfo | None:

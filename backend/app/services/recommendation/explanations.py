@@ -43,25 +43,27 @@ def explain(r: RankedRotation, current: RankedRotation, profiles: CropProfileRep
     benefits: list[str] = []
     if not r.is_current:
         w, cw = r.evaluation.water, current.evaluation.water
-        if w and cw and w.irrigation_need_m3 is not None and cw.irrigation_need_m3:
-            diff = cw.irrigation_need_m3 - w.irrigation_need_m3
+        if w and cw and w.irrigation_need_m3_per_year is not None and cw.irrigation_need_m3_per_year:
+            diff = cw.irrigation_need_m3_per_year - w.irrigation_need_m3_per_year
             if diff > 0:
-                benefits.append(f"About {diff:,.0f} m³ less irrigation water per cycle "
-                                f"({diff / cw.irrigation_need_m3:.0%} below the current rotation).")
+                benefits.append(f"About {diff:,.0f} m³ less irrigation water per year "
+                                f"({diff / cw.irrigation_need_m3_per_year:.0%} below the current rotation).")
         for c in added:
             if profs[c].is_legume:
                 benefits.append(f"Adds a legume ({_name(c)}); legumes can fix atmospheric nitrogen. This is an "
                                 "indicator for soil health, not proof of improvement.")
         inc, cinc = r.evaluation.income, current.evaluation.income
         if inc and cinc and inc.basis == cinc.basis:
-            mine = inc.net_income if inc.basis == "net" else inc.gross_revenue
-            theirs = cinc.net_income if cinc.basis == "net" else cinc.gross_revenue
+            mine = inc.net_income_per_year if inc.basis == "net" else inc.gross_revenue_per_year
+            theirs = cinc.net_income_per_year if cinc.basis == "net" else cinc.gross_revenue_per_year
+            label = "net income (after costs)" if inc.basis == "net" else "gross revenue (before costs)"
             if mine is not None and theirs and mine > theirs:
-                benefits.append(f"About {mine - theirs:,.0f} {inc.currency} more {inc.basis} income per cycle "
+                benefits.append(f"About {mine - theirs:,.0f} {inc.currency} more {label} per year "
                                 f"({(mine - theirs) / theirs:.0%} above the current rotation).")
         g, cg = r.evaluation.ground_cover, current.evaluation.ground_cover
-        if g and cg and g.bare_soil_days < cg.bare_soil_days:
-            benefits.append(f"{cg.bare_soil_days - g.bare_soil_days} fewer bare-soil days per year.")
+        if g and cg and g.bare_soil_days_per_year < cg.bare_soil_days_per_year:
+            benefits.append(f"{cg.bare_soil_days_per_year - g.bare_soil_days_per_year:.0f} fewer bare-soil days "
+                            "per year.")
         if (r.dimension_scores.resilience is not None and current.dimension_scores.resilience is not None
                 and r.evaluation.highest_crop_season_risk < current.evaluation.highest_crop_season_risk):
             benefits.append(
@@ -87,7 +89,7 @@ def explain(r: RankedRotation, current: RankedRotation, profiles: CropProfileRep
     if inc is None or inc.gross_revenue is None:
         gaps.append("Income not assessed: a crop has no yield or price (enter local values).")
     elif inc.basis == "gross":
-        gaps.append("Income is gross revenue only (no production costs entered).")
+        gaps.append("Income is gross revenue only, before costs: it is not profit (no production costs entered).")
     if inc and any(s.yield_source and s.yield_source != "farmer" for s in inc.seasons):
         gaps.append("Yields and prices are FAOSTAT national averages, not local figures.")
     for c in r.evaluation.crop_results:

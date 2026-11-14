@@ -15,6 +15,7 @@ def get_satellite(
     data = satellite_for(Location(latitude=latitude, longitude=longitude))
     if data is None:
         raise HTTPException(
-            status_code=404, detail=f"No saved satellite sample within {MAX_DISTANCE_KM:.0f} km (demo districts only)"
+            status_code=404,
+            detail=f"Outside Pakistan (GRACE grid) and more than {MAX_DISTANCE_KM:.0f} km from a demo district",
         )
     return data

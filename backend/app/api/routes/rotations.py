@@ -1,9 +1,11 @@
+import asyncio
+
 import httpx
 from fastapi import APIRouter, Depends
 
 from app.api.dependencies import get_nasa_client, get_recommendation_engine, get_soil_client
 from app.api.routes.environmental_data import load_environmental_data
-from app.api.routes.history import run_history
+from app.api.routes.history import likely_future, prefetch_history_weather, run_history
 from app.repositories.crop_profiles import CropProfileRepository, get_crop_profile_repository
 from app.repositories.crop_profiles import get_crop_profile_repository as _profiles
 from app.schemas.crop import CropProfile
@@ -31,18 +33,26 @@ async def compare_rotations(
     soil_client: SoilGridsClient = Depends(get_soil_client),
 ) -> Recommendation:
     seasons = [s for r in [request.current, *request.alternatives] for s in r.seasons]
-    env = await load_environmental_data(
-        client,
-        request.location.latitude,
-        request.location.longitude,
-        min(s.sowing_date for s in seasons),
-        max(s.harvest_date for s in seasons),
+
+    async def get_soil() -> SoilInfo | None:
+        try:
+            return await soil_client.get(request.location)
+        except httpx.HTTPError:
+            return None  # soil is optional context; the comparison still runs without it
+
+    # Weather, soil and (for seasons with no weather yet) 20 years of history are independent
+    # downloads, so they run at the same time instead of one after another.
+    env, soil, _ = await asyncio.gather(
+        load_environmental_data(
+            client,
+            request.location.latitude,
+            request.location.longitude,
+            min(s.sowing_date for s in seasons),
+            max(s.harvest_date for s in seasons),
+        ),
+        get_soil(),
+        prefetch_history_weather(request.location, likely_future(seasons), client),
     )
-    soil: SoilInfo | None = None
-    try:
-        soil = await soil_client.get(request.location)
-    except httpx.HTTPError:
-        soil = None  # soil is optional context; the comparison still runs without it
     # Seasons that end after the latest weather (e.g. next season) get the historical median water need
     # and the typical (mean) risk of the same dates in past years.
     latest = env.data_note.latest_observation_date

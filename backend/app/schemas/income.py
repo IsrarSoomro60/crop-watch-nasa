@@ -30,6 +30,9 @@ class SeasonIncome(BaseModel):
 class RotationIncome(BaseModel):
     currency: str
     seasons: list[SeasonIncome]
-    gross_revenue: float | None = None
-    net_income: float | None = None
+    gross_revenue: float | None = Field(default=None, description="Before costs, whole cycle")
+    net_income: float | None = Field(default=None, description="After the farmer's costs, whole cycle")
+    cycle_years: int = 1
+    gross_revenue_per_year: float | None = None
+    net_income_per_year: float | None = None
     basis: str = Field(description="'net' when every season has costs, else 'gross'")

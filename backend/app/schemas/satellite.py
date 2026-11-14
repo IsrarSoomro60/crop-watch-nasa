@@ -28,15 +28,30 @@ class GraceSummary(BaseModel):
     cell_lat: float
     cell_lon: float
     trend_cm_per_year: float | None = Field(description="OLS slope over all months; descriptive only")
+    recent_trend_cm_per_year: float | None = Field(default=None, description="OLS slope over the recent window")
+    recent_trend_years: int | None = None
     latest: GracePoint | None
     series: list[GracePoint]
+    source: str = ""
 
 
 class SatelliteData(BaseModel):
-    district: str
-    distance_km: float = Field(description="From the requested point to the district sample point")
+    district: str | None = Field(description="Demo district with NDVI/soil-moisture samples; null elsewhere")
+    distance_km: float | None = Field(description="From the requested point to the district sample point")
     ndvi: list[NdviPoint]
     soil_moisture: list[SoilMoisturePoint]
     grace: GraceSummary | None
     sources: dict[str, str]
     limitations: list[str]
+
+
+class RegionalWater(BaseModel):
+    """GRACE regional water-storage context for a comparison (not part of any score)."""
+
+    trend_cm_per_year: float | None
+    recent_trend_cm_per_year: float | None
+    recent_trend_years: int | None
+    first_month: date
+    latest: GracePoint
+    message: str
+    source: str

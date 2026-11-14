@@ -42,11 +42,14 @@ farmer priorities:
    lengths) or a farmer-picked stage, Low/Moderate/High per risk with the brief's rule (Moderate 3+
    days in a row → High), worst risk as the badge, up to 3 cards with the number against the limit,
    tips, and a 7-day strip.
-7b. **Satellite add-ons** (`GET /api/satellite`, `services/satellite.py`) — saved samples for the
-   four demo districts (built by `scripts/build_satellite_samples.py`): MODIS NDVI (16-day, with pixel
-   reliability), SMAP L4 root-zone/surface soil moisture (daily means) and the GRACE/GRACE-FO mascon
-   water-storage anomaly with an OLS trend. Context only: not yet part of scoring. Other locations
-   get 404 rather than a distant series.
+7b. **Satellite add-ons** (`GET /api/satellite`, `services/satellite.py`) — GRACE/GRACE-FO water
+   storage for any location in Pakistan (grid from `scripts/build_grace_pakistan.py`, full-record and
+   10-year OLS trends), plus MODIS NDVI and SMAP L4 soil moisture samples for the four demo districts
+   (`scripts/build_satellite_samples.py`). Every comparison adds a plain-language GRACE line and how
+   much irrigation each alternative saves versus the current rotation. Context only: not scored.
+7c. **Income defaults** — `services/income/income.py` uses farmer values first, then FAOSTAT Pakistan
+   national averages from `scripts/build_faostat_defaults.py` (wheat, rice, maize). Crops without a
+   default (mung bean, berseem) leave income missing, so the overall score is withheld, not guessed.
 8. **Recommendation** — `services/recommendation/recommendation_engine.py` builds dimension scores,
    applies farmer priorities with `services/rotation/scoring.py`, ranks rotations and lists
    limitations. `explanations.py` adds, per strategy, why it's considered, benefits versus the
@@ -118,3 +121,23 @@ district (Multan, Bahawalpur, Larkana, Hyderabad); default range 2025-06-01 to 2
 - Advice table has only three entries and no Urdu text yet.
 - Water and income scoring need local water-use, yield, price and cost data.
 - Farms are stored in memory only.
+
+## Speed: parallel downloads, disk cache, warm-up
+
+Almost all response time is waiting for NASA POWER (~2-5 s per download) and SoilGrids (~5-15 s per
+request, sometimes hanging under load). Three measures keep the demo fast:
+
+- **Parallel downloads** — a comparison fetches weather, soil and (for seasons with no weather yet)
+  20 years of history at the same time (`asyncio.gather` in `api/routes/rotations.py` and `history.py`).
+- **Disk cache** (`backend/var/cache/`, git-ignored; `DISK_CACHE`, `CACHE_DIR` settings) — every POWER
+  download is saved for the cache lifetime (6 h, recent days are revised nightly) and any longer
+  download answers a shorter request for the same grid cell. SoilGrids answers, including "no soil
+  data here", are kept for good; a SoilGrids failure uses the saved sample and is retried after 15 min.
+- **Warm-up** (`services/warm_up.py`, `WARM_UP_DEMO_DISTRICTS`) — at startup, in the background, one
+  21-year POWER download per demo district plus their soil, so demo requests are answered from cache.
+
+Measured on 2026-11-14 (same network, back to back): first Multan comparison 41.9 s with the old
+code, 23.8 s with parallel downloads, ~0.2 s server time after warm-up (warm-up itself: weather 4 s,
+soil ~60 s in the background). SoilGrids speed varied a lot between runs. Redis (shared cache across
+servers) and Celery (background jobs for AppEEARS / monthly GRACE / yearly FAOSTAT) are the next step
+for a multi-user deployment; they are not needed for one demo server.

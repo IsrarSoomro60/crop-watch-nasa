@@ -19,14 +19,8 @@ from app.core.config import get_settings
 from app.schemas.farm import Location
 from app.services.nasa.client import NasaPowerClient, _TTLCache, sample_path
 from app.services.soil.soilgrids import SoilGridsClient, parse_layers
+from app.services.warm_up import DEMO_DISTRICTS
 
-# Approximate city-centre coordinates (Multan from the research brief).
-DEMO_DISTRICTS = {
-    "Multan": (30.20, 71.47),
-    "Bahawalpur": (29.40, 71.68),
-    "Larkana": (27.56, 68.21),
-    "Hyderabad": (25.40, 68.37),
-}
 DEFAULT_RANGE = (date(2025, 6, 1), date(2026, 5, 31))  # one kharif + rabi cycle
 SOILGRIDS_PAUSE_S = 13  # ISRIC fair use: at most 5 requests per minute
 

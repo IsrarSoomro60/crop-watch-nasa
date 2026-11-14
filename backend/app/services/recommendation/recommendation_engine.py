@@ -28,6 +28,7 @@ from app.services.income.income import income_scores, rotation_income
 from app.services.recommendation.explanations import explain
 from app.services.rotation.rotation_evaluator import RotationEvaluator
 from app.services.rotation.scoring import normalise_weights, preference_score, risk_to_resilience
+from app.services.satellite import regional_water
 
 LIMITATIONS = [
     "Income defaults are FAOSTAT national averages for Pakistan (yield, producer price), not local or current "
@@ -61,8 +62,8 @@ def unassessed_crops(evaluation: RotationEvaluation, risks: set[RiskType]) -> li
 
 
 def water_scores_for(evaluations: list[RotationEvaluation]) -> list[float | None]:
-    """Lowest irrigation need = 1.0; others = lowest / own. None where need could not be calculated."""
-    needs = [e.water.irrigation_need_m3 if e.water else None for e in evaluations]
+    """Lowest irrigation need per year = 1.0; others = lowest / own. None where need could not be calculated."""
+    needs = [e.water.irrigation_need_m3_per_year if e.water else None for e in evaluations]
     known = [n for n in needs if n is not None]
     if not known:
         return [None] * len(needs)
@@ -158,9 +159,10 @@ class RecommendationEngine:
         for r in ranked:
             ds = r.dimension_scores
             w = r.evaluation.water
-            need = f", irrigation need {w.irrigation_need_m3:,.0f} m3" if w and w.irrigation_need_m3 is not None else ""
+            need = (f", irrigation need {w.irrigation_need_m3_per_year:,.0f} m3/year"
+                    if w and w.irrigation_need_m3_per_year is not None else "")
             gc = r.evaluation.ground_cover
-            bare = f", {gc.bare_soil_days} bare-soil days" if gc else ""
+            bare = f", {gc.bare_soil_days_per_year:.0f} bare-soil days/year" if gc else ""
             parts = (f"soil-health indicator {ds.soil_health}{bare}, water {ds.water}{need}, "
                      f"resilience {ds.resilience}")
             if r.preference_score is not None:
@@ -177,10 +179,46 @@ class RecommendationEngine:
                 + ", ".join(sorted(r.value for r in common)) + "."
             )
 
+        explanation.append(comparison_basis(ranked))
+        water_context = regional_water(request.location)
+        if water_context:
+            explanation.append(water_context.message)
+            explanation.extend(water_saving_lines(ranked))
+
         return Recommendation(
             ranked=ranked,
             explanation=explanation,
             limitations=LIMITATIONS,
             resilience_risks=sorted(common),
             soil=soil,
+            regional_water=water_context,
         )
+
+
+def water_saving_lines(ranked: list[RankedRotation]) -> list[str]:
+    """Irrigation saved by each alternative versus the current rotation (only when both are calculated)."""
+    current = next((r for r in ranked if r.is_current), None)
+    base = current.evaluation.water.irrigation_need_m3_per_year if current and current.evaluation.water else None
+    if base is None:
+        return []
+    lines = []
+    for r in ranked:
+        need = r.evaluation.water.irrigation_need_m3_per_year if r.evaluation.water else None
+        if r.is_current or need is None or need >= base:
+            continue
+        lines.append(f"{r.rotation_name} needs about {base - need:,.0f} m3 less irrigation water per year than "
+                     f"your current rotation ({(base - need) / base:.0%} less).")
+    return lines
+
+
+def comparison_basis(ranked: list[RankedRotation]) -> str:
+    """Say what period water, income and bare-soil days refer to, so rotations of different lengths compare fairly."""
+    lengths = {r.rotation_name: r.evaluation.cycle_years for r in ranked}
+    if len(set(lengths.values())) == 1:
+        n = next(iter(lengths.values()))
+        cycle = "1-year" if n == 1 else f"{n}-year"
+        return (f"Comparison basis: every rotation is a {cycle} cycle; water, income and bare-soil days are "
+                "shown per year.")
+    detail = ", ".join(f"{name} {n} year{'s' if n > 1 else ''}" for name, n in lengths.items())
+    return ("Comparison basis: rotations have different cycle lengths (" + detail + "), so water, income and "
+            "bare-soil days are divided by each cycle's length and compared per year.")

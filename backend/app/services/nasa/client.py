@@ -10,7 +10,9 @@ If NASA cannot be reached, a saved sample for the same cell is used when one
 exists (see scripts/fetch_sample_data.py).
 """
 
+import hashlib
 import json
+import logging
 import time
 from dataclasses import dataclass
 from datetime import date
@@ -33,6 +35,8 @@ DEFAULT_PARAMETERS = (
     "GWETTOP",
     "GWETROOT",
 )
+
+log = logging.getLogger("cropwatch")
 
 GRID_LAT_STEP = 0.5
 GRID_LON_STEP = 0.625
@@ -74,6 +78,16 @@ class _TTLCache:
     def set(self, key: tuple, value: dict[str, Any], ttl: float) -> None:
         self._items[key] = (time.monotonic() + ttl, value)
 
+    def find_covering(self, lat: float, lon: float, start: date, end: date, parameters: tuple) -> dict | None:
+        """A cached download for the same cell and parameters whose dates include start..end."""
+        for key in list(self._items):
+            k_lat, k_lon, k_start, k_end, k_params = key
+            if (k_lat, k_lon, k_params) == (lat, lon, parameters) and k_start <= start and end <= k_end:
+                value = self.get(key)
+                if value is not None:
+                    return value
+        return None
+
     def clear(self) -> None:
         self._items.clear()
 
@@ -113,6 +127,13 @@ class NasaPowerClient:
         lat, lon = snap_to_grid(latitude, longitude)
         key = (lat, lon, start, end, parameters)
         cached = self._cache.get(key)
+        if cached is None:
+            # A longer download that includes these dates (e.g. 20 years) answers a shorter request too.
+            covering = self._cache.find_covering(lat, lon, start, end, parameters) or self._disk_get(
+                lat, lon, start, end, parameters
+            )
+            if covering is not None:
+                cached = _filter_payload(covering, start, end)
         if cached is not None:
             return PowerResponse(cached, lat, lon, from_cache=True)
 
@@ -125,7 +146,50 @@ class NasaPowerClient:
             return PowerResponse(sample, lat, lon, from_sample=True)
 
         self._cache.set(key, payload, self._settings.nasa_cache_ttl_seconds)
+        self._disk_set(lat, lon, start, end, parameters, payload)
         return PowerResponse(payload, lat, lon)
+
+    # --- disk cache: one JSON file per download, reused until it is older than the TTL ---
+
+    def _disk_prefix(self, lat: float, lon: float, parameters: tuple[str, ...]) -> str:
+        digest = hashlib.sha1(",".join(parameters).encode()).hexdigest()[:8]
+        return f"{lat}_{lon}_{digest}"
+
+    def _disk_dir(self) -> Path | None:
+        return self._settings.cache_dir / "power" if self._settings.disk_cache else None
+
+    def _disk_get(self, lat: float, lon: float, start: date, end: date, parameters: tuple[str, ...]) -> dict | None:
+        folder = self._disk_dir()
+        if folder is None or not folder.exists():
+            return None
+        ttl = self._settings.nasa_cache_ttl_seconds
+        for path in folder.glob(f"{self._disk_prefix(lat, lon, parameters)}_*.json"):
+            try:
+                f_start, f_end = (date.fromisoformat(x) for x in path.stem.rsplit("_", 2)[-2:])
+                age = time.time() - path.stat().st_mtime
+                if not (f_start <= start and end <= f_end) or age > ttl:
+                    continue
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            self._cache.set((lat, lon, f_start, f_end, parameters), payload, ttl - age)
+            return payload
+        return None
+
+    def _disk_set(
+        self, lat: float, lon: float, start: date, end: date, parameters: tuple[str, ...], payload: dict
+    ) -> None:
+        folder = self._disk_dir()
+        if folder is None:
+            return
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            path = folder / f"{self._disk_prefix(lat, lon, parameters)}_{start.isoformat()}_{end.isoformat()}.json"
+            tmp = path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(payload), encoding="utf-8")
+            tmp.replace(path)
+        except OSError as exc:  # a cache write must never break a request
+            log.warning("could not save POWER cache file: %s", exc)
 
     async def _request(
         self, lat: float, lon: float, start: date, end: date, parameters: tuple[str, ...]

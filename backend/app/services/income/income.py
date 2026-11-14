@@ -14,6 +14,7 @@ from app.core.config import APP_DIR
 from app.schemas.crop import CropName
 from app.schemas.income import CropEconomics, RotationIncome, SeasonIncome
 from app.schemas.rotation import Rotation
+from app.services.rotation.cycle import cycle_years, per_year
 
 DEFAULTS_PATH = APP_DIR / "domain" / "economics" / "faostat_pakistan.json"
 
@@ -48,6 +49,9 @@ def season_income(crop: CropName, area: float, given: CropEconomics | None, defa
     if given and given.cost_per_ha is not None:
         result.cost_per_ha = given.cost_per_ha
 
+    used_default = any(src and src.startswith("FAOSTAT") for src in (result.yield_source, result.price_source))
+    if used_default or result.yield_t_ha is None or result.price_per_t is None:
+        result.notes.extend(d.get("notes", []))
     if result.yield_t_ha is None or result.price_per_t is None:
         result.notes.append("No yield or price available; enter local values to include this crop.")
         return result
@@ -64,19 +68,25 @@ def rotation_income(rotation: Rotation, economics: dict[CropName, CropEconomics]
     currency = next((e.currency for e in economics.values()), defaults.get("currency", "PKR"))
     complete = all(s.gross_revenue is not None for s in seasons)
     net = complete and all(s.net_income is not None for s in seasons)
+    gross = round(sum(s.gross_revenue for s in seasons), 0) if complete else None  # type: ignore[misc]
+    net_total = round(sum(s.net_income for s in seasons), 0) if net else None  # type: ignore[misc]
+    years = cycle_years(rotation)
     return RotationIncome(
         currency=currency,
         seasons=seasons,
-        gross_revenue=round(sum(s.gross_revenue for s in seasons), 0) if complete else None,  # type: ignore[misc]
-        net_income=round(sum(s.net_income for s in seasons), 0) if net else None,  # type: ignore[misc]
+        gross_revenue=gross,
+        net_income=net_total,
+        cycle_years=years,
+        gross_revenue_per_year=per_year(gross, years),
+        net_income_per_year=per_year(net_total, years),
         basis="net" if net else "gross",
     )
 
 
 def income_scores(incomes: list[RotationIncome]) -> list[float | None]:
-    """Highest income = 1.0, others = own / highest. Net income only if every rotation has it."""
-    use_net = all(i.net_income is not None for i in incomes)
-    values = [(i.net_income if use_net else i.gross_revenue) for i in incomes]
+    """Highest income per year = 1.0, others = own / highest. Net income only if every rotation has it."""
+    use_net = all(i.net_income_per_year is not None for i in incomes)
+    values = [(i.net_income_per_year if use_net else i.gross_revenue_per_year) for i in incomes]
     known = [v for v in values if v is not None]
     if not known or max(known) <= 0:
         return [None] * len(values)

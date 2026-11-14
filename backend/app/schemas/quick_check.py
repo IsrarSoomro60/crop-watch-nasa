@@ -38,6 +38,7 @@ class QuickCheckResult(BaseModel):
     stage_basis: str = Field(description="How the stage was decided")
     overall: RiskLevel | None = Field(description="Worst single risk; null if nothing could be assessed")
     cards: list[RiskCard] = Field(description="Up to three, most severe first")
+    assessed: list[RiskType] = Field(default_factory=list, description="Risks checked against a limit")
     not_assessed: list[RiskType]
     advice: list[AdviceTip]
     last_7_days: list[DayStrip]

@@ -21,6 +21,14 @@ const DIMENSIONS: { key: keyof Priorities & keyof DimensionScores; label: string
   { key: "resilience", label: "Climate resilience" },
 ];
 
+/** Same rule as the backend (CropSeason validator): harvest must be after sowing; area above zero. */
+export function seasonError(s: CropSeason): string | null {
+  if (!s.sowing_date || !s.harvest_date) return "Enter both a sowing and a harvest date.";
+  if (s.harvest_date <= s.sowing_date) return "Harvest date must be after the sowing date.";
+  if (!(s.area_hectares > 0)) return "Area must be more than 0 ha.";
+  return null;
+}
+
 function SeasonRow({
   s,
   onChange,
@@ -30,8 +38,10 @@ function SeasonRow({
   onChange: (s: CropSeason) => void;
   onRemove?: () => void;
 }) {
+  const error = seasonError(s);
   return (
-    <div className="row" style={{ marginBottom: 8 }}>
+    <>
+    <div className="row" style={{ marginBottom: error ? 2 : 8 }}>
       <label className="field">
         Crop
         <select value={s.crop} onChange={(e) => onChange({ ...s, crop: e.target.value as CropName })}>
@@ -71,6 +81,12 @@ function SeasonRow({
         </button>
       )}
     </div>
+    {error && (
+      <p className="error small" role="alert" style={{ margin: "0 0 8px" }}>
+        {error}
+      </p>
+    )}
+    </>
   );
 }
 
@@ -170,22 +186,34 @@ function RankedCard({ r, pos, urdu }: { r: RankedRotation; pos: number; urdu: bo
 
       <div className="grid" style={{ marginTop: 12 }}>
         <div>
-          <div className="muted small">Irrigation need</div>
-          <strong>{ev.water?.irrigation_need_m3 == null ? "Not calculated" : `${fmt(ev.water.irrigation_need_m3)} m³`}</strong>
-        </div>
-        <div>
-          <div className="muted small">Income ({ev.income?.basis ?? "gross"})</div>
+          <div className="muted small">Irrigation need per year</div>
           <strong>
-            {ev.income && (ev.income.net_income ?? ev.income.gross_revenue) != null
-              ? `${ev.income.currency} ${fmt(ev.income.net_income ?? ev.income.gross_revenue)}`
-              : "Needs your yield and price"}
+            {ev.water?.irrigation_need_m3_per_year == null
+              ? "Not calculated"
+              : `${fmt(ev.water.irrigation_need_m3_per_year)} m³`}
           </strong>
         </div>
         <div>
-          <div className="muted small">Bare soil in the year</div>
-          <strong>{ev.ground_cover ? `${ev.ground_cover.bare_soil_days} days` : "—"}</strong>
+          <div className="muted small">
+            {ev.income?.basis === "net" ? "Net income per year (after your costs)" : "Gross revenue per year (before costs, not profit)"}
+          </div>
+          <strong>
+            {ev.income && (ev.income.basis === "net" ? ev.income.net_income_per_year : ev.income.gross_revenue_per_year) != null
+              ? `${ev.income.currency} ${fmt(ev.income.basis === "net" ? ev.income.net_income_per_year : ev.income.gross_revenue_per_year)}`
+              : "Needs local yield and price"}
+          </strong>
+        </div>
+        <div>
+          <div className="muted small">Bare-soil days per year</div>
+          <strong>{ev.ground_cover ? `${fmt(ev.ground_cover.bare_soil_days_per_year)} days` : "—"}</strong>
         </div>
       </div>
+      {ev.cycle_years > 1 && (
+        <p className="muted small">
+          This rotation repeats every {ev.cycle_years} years; its totals are divided by {ev.cycle_years} to compare
+          per year.
+        </p>
+      )}
 
       <details>
         <summary>Risk by crop</summary>
@@ -268,7 +296,7 @@ function RankedCard({ r, pos, urdu }: { r: RankedRotation; pos: number; urdu: bo
                   <th>Crop</th>
                   <th className="num">Yield (t/ha)</th>
                   <th className="num">Price / t</th>
-                  <th className="num">Gross</th>
+                  <th className="num">Gross revenue (before costs)</th>
                   <th>Source</th>
                 </tr>
               </thead>
@@ -279,7 +307,14 @@ function RankedCard({ r, pos, urdu }: { r: RankedRotation; pos: number; urdu: bo
                     <td className="num">{fmt(s.yield_t_ha, 2)}</td>
                     <td className="num">{fmt(s.price_per_t)}</td>
                     <td className="num">{fmt(s.gross_revenue)}</td>
-                    <td className="small">{[s.yield_source, s.price_source].filter(Boolean).join("; ") || s.notes.join(" ")}</td>
+                    <td className="small">
+                      {[s.yield_source, s.price_source].filter(Boolean).join("; ")}
+                      {s.notes.map((n, k) => (
+                        <div key={k} className="muted">
+                          {n}
+                        </div>
+                      ))}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -326,7 +361,10 @@ export default function CompareView({ location, urdu }: { location: Location; ur
     setEcon((e) => ({ ...e, [crop]: { ...e[crop], currency: "PKR", [field]: v === "" ? null : Number(v) } }));
   }
 
+  const invalidSeasons = [current, ...alts].flatMap((r) => r.seasons.filter((s) => seasonError(s) !== null)).length;
+
   function run() {
+    if (invalidSeasons > 0) return;
     const economics = Object.fromEntries(
       Object.entries(econ).filter(([c]) => usedCrops.includes(c as CropName)),
     ) as Partial<Record<CropName, CropEconomics>>;
@@ -419,9 +457,14 @@ export default function CompareView({ location, urdu }: { location: Location; ur
         </details>
 
         <p>
-          <button className="primary" onClick={run} disabled={loading}>
+          <button className="primary" onClick={run} disabled={loading || invalidSeasons > 0}>
             {loading ? "Comparing… (fetching NASA data)" : "Compare rotations"}
           </button>
+          {invalidSeasons > 0 && (
+            <span className="small" style={{ color: "var(--high)", marginLeft: 12 }}>
+              Fix {invalidSeasons} season{invalidSeasons > 1 ? "s" : ""} with invalid dates or area first.
+            </span>
+          )}
         </p>
       </section>
 
@@ -438,6 +481,16 @@ export default function CompareView({ location, urdu }: { location: Location; ur
               </p>
             )}
           </section>
+          {data.regional_water && (
+            <section className="card">
+              <h3>Regional water (GRACE satellites)</h3>
+              <p>{data.regional_water.message}</p>
+              <p className="muted small">
+                {data.regional_water.source}. Context only: it does not change the scores. See the My area tab for the
+                chart.
+              </p>
+            </section>
+          )}
           {data.ranked.map((r, i) => (
             <RankedCard key={r.rotation_name + i} r={r} pos={i + 1} urdu={urdu} />
           ))}

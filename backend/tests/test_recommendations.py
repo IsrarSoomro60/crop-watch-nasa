@@ -70,7 +70,8 @@ def test_unassessed_crop_is_not_treated_as_low_risk():
     mung = by_name["Mung-Wheat"]
     assert mung.dimension_scores.resilience is None
     assert mung.preference_score is None
-    assert mung.missing_dimensions == ["resilience"]
+    # FAOSTAT has no mung bean price, so income is missing too until the farmer enters one.
+    assert mung.missing_dimensions == ["income", "resilience"]
     assert rec.ranked[-1].rotation_name == "Mung-Wheat"
     assert any("Mung-Wheat: not scored" in e and "mung_bean" in e for e in rec.explanation)
 

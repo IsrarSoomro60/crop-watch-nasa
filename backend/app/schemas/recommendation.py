@@ -7,6 +7,7 @@ from app.schemas.environment import DataNote
 from app.schemas.farm import Location, Priorities
 from app.schemas.income import CropEconomics
 from app.schemas.rotation import Rotation, RotationEvaluation
+from app.schemas.satellite import RegionalWater
 from app.schemas.soil import SoilInfo
 
 
@@ -61,3 +62,6 @@ class Recommendation(BaseModel):
     )
     data_note: DataNote | None = None
     soil: SoilInfo | None = None
+    regional_water: RegionalWater | None = Field(
+        default=None, description="GRACE regional water-storage trend; context only, not scored"
+    )

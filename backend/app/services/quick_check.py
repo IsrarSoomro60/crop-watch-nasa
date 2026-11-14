@@ -43,6 +43,10 @@ def current_stage(profile: CropProfile, request: QuickCheckRequest, today: date)
     return None, f"day {elapsed + 1} after sowing is past the {total}-day reference season"
 
 
+def supported_stages(profile: CropProfile) -> list[StageType]:
+    return [s.stage_type for s in profile.stages]
+
+
 def thresholds_for(profile: CropProfile, stage: StageType | None) -> dict[RiskType, Threshold]:
     if stage is not None:
         for s in profile.stages:
@@ -115,12 +119,17 @@ def quick_check(
                      "in every stage were checked.")
     if not recent:
         notes.append("No recent weather available for this location.")
+    if not assessed:
+        where = f" at the {stage.value.replace('_', ' ')} stage" if stage else ""
+        notes.append(f"Not assessed: no supported limit could be checked for {profile.display_name}{where}. "
+                     "This is not a 'no risk' result.")
     return QuickCheckResult(
         crop=profile.crop,
         stage=stage,
         stage_basis=basis,
         overall=max(assessed, key=order.index) if assessed else None,
         cards=cards[:MAX_CARDS],
+        assessed=[r for r, lvl in levels.items() if lvl is not None],
         not_assessed=[r for r, lvl in levels.items() if lvl is None],
         advice=advice.tips(profile.crop, levels),
         last_7_days=[DayStrip(day=o.day, tmax_c=o.tmax_c, tmin_c=o.tmin_c, precipitation_mm=o.precipitation_mm,

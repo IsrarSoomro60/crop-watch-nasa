@@ -54,8 +54,10 @@ def _client(tmp_path, handler) -> SoilGridsClient:
 @pytest.fixture(autouse=True)
 def _clear_cache():
     soilgrids._cache.clear()
+    soilgrids._failed.clear()
     yield
     soilgrids._cache.clear()
+    soilgrids._failed.clear()
 
 
 def test_steps_out_from_built_up_point_and_converts_units(tmp_path):
@@ -112,3 +114,42 @@ def test_ground_cover_counts_bare_days():
     gc = ground_cover(rice_wheat)
     assert gc.bare_soil_days == 365 - 123 - 152
     assert gc.cover_fraction == round(275 / 365, 3)
+
+
+def test_answers_are_saved_to_disk_including_no_data(tmp_path):
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        lat, lon = float(request.url.params["lat"]), float(request.url.params["lon"])
+        clay = None if lat > 31 else 23.5  # "city" with no data around 31.5
+        return httpx.Response(200, json=_payload(lat, lon, clay))
+
+    settings = Settings(sample_data_dir=tmp_path, disk_cache=True, cache_dir=tmp_path / "cache")
+
+    def client():
+        return SoilGridsClient(settings, http=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+
+    farm, city = Location(latitude=30.2, longitude=71.47), Location(latitude=31.5, longitude=74.3)
+    assert asyncio.run(client().get(farm)).texture_class
+    assert asyncio.run(client().get(city)) is None
+    n = len(calls)
+
+    soilgrids._cache.clear()  # as after a server restart: only the disk copy is left
+    assert asyncio.run(client().get(farm)).texture_class
+    assert asyncio.run(client().get(city)) is None
+    assert len(calls) == n  # nothing downloaded again
+
+
+def test_failure_is_remembered_so_repeats_do_not_wait_again(tmp_path):
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        raise httpx.ReadTimeout("SoilGrids hung")
+
+    client = _client(tmp_path, handler)
+    point = Location(latitude=30.2, longitude=71.47)
+    assert asyncio.run(client.get(point)) is None  # no saved sample in tmp_path
+    asyncio.run(client.get(point))
+    assert len(calls) == 1  # second call used the remembered failure

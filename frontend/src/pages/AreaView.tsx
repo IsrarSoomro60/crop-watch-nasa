@@ -9,36 +9,44 @@ export default function AreaView({ location }: { location: Location }) {
   const [sat, setSat] = useState<SatelliteData | null>(null);
   const [soilErr, setSoilErr] = useState<string | null>(null);
   const [satErr, setSatErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [soilLoading, setSoilLoading] = useState(false);
+  const [satLoading, setSatLoading] = useState(false);
 
   useEffect(() => {
     let live = true;
-    setLoading(true);
     setSoil(null);
     setSat(null);
     setSoilErr(null);
     setSatErr(null);
     const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
-    Promise.allSettled([api.soil(location.latitude, location.longitude), api.satellite(location.latitude, location.longitude)])
-      .then(([s, t]) => {
-        if (!live) return;
-        if (s.status === "fulfilled") setSoil(s.value);
-        else setSoilErr(msg(s.reason));
-        if (t.status === "fulfilled") setSat(t.value);
-        else setSatErr(msg(t.reason).startsWith("404") ? "No saved satellite sample here (demo districts only)." : msg(t.reason));
-      })
-      .finally(() => live && setLoading(false));
+    // Wait until typing stops: SoilGrids allows only ~5 requests a minute.
+    const timer = setTimeout(() => {
+      setSoilLoading(true);
+      setSatLoading(true);
+      api
+        .soil(location.latitude, location.longitude)
+        .then((s) => live && setSoil(s))
+        .catch((e) => live && setSoilErr(msg(e)))
+        .finally(() => live && setSoilLoading(false));
+      api
+        .satellite(location.latitude, location.longitude)
+        .then((t) => live && setSat(t))
+        .catch((e) => live && setSatErr(msg(e).startsWith("404") ? "No satellite data here (Pakistan only)." : msg(e)))
+        .finally(() => live && setSatLoading(false));
+    }, 700);
     return () => {
       live = false;
+      clearTimeout(timer);
     };
   }, [location.latitude, location.longitude]);
 
   return (
     <>
-      {loading && <p className="muted">Loading soil and satellite data…</p>}
+      {satLoading && <p className="muted">Loading satellite data…</p>}
 
       <section className="card">
         <h2>Soil</h2>
+        {soilLoading && <p className="muted small">Loading SoilGrids (can take up to a minute)…</p>}
         <ErrorBox error={soilErr} />
         {soil && (
           <>
@@ -60,6 +68,13 @@ export default function AreaView({ location }: { location: Location }) {
       <ErrorBox error={satErr} />
       {sat && (
         <>
+          {!sat.district && (
+            <p className="note">
+              Green cover and soil moisture are saved samples for the four demo districts only; pick one to see them.
+            </p>
+          )}
+          {sat.district && (
+          <>
           <section className="card">
             <h2>Green cover (MODIS NDVI) · {sat.district}</h2>
             <p className="muted small">
@@ -77,6 +92,8 @@ export default function AreaView({ location }: { location: Location }) {
               points={sat.soil_moisture.map((p) => ({ x: p.date, y: p.rootzone_m3m3 }))}
             />
           </section>
+          </>
+          )}
 
           {sat.grace && (
             <section className="card">
@@ -85,7 +102,10 @@ export default function AreaView({ location }: { location: Location }) {
                 Trend:{" "}
                 <strong>
                   {sat.grace.trend_cm_per_year == null ? "—" : `${fmt(sat.grace.trend_cm_per_year, 2)} cm per year`}
-                </strong>
+                </strong>{" "}
+                since {sat.grace.series[0]?.date.slice(0, 4)}
+                {sat.grace.recent_trend_cm_per_year != null &&
+                  ` (${fmt(sat.grace.recent_trend_cm_per_year, 2)} cm/yr over the last ${sat.grace.recent_trend_years} years)`}
                 {sat.grace.latest && (
                   <span className="muted small">
                     {" "}

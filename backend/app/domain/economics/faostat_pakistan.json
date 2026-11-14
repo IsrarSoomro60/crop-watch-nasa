@@ -1,0 +1,82 @@
+{
+  "source": "FAOSTAT (FAO), Pakistan: Crops and livestock products (QCL) yield; Producer Prices (PP) annual",
+  "currency": "PKR",
+  "built": "2026-11-14",
+  "method": [
+    "Yield = mean of the latest 3 FAOSTAT years (national average, all irrigation types).",
+    "Price = latest annual FAOSTAT producer price, nominal PKR per tonne (not adjusted for inflation).",
+    "National averages: local yields and prices can differ a lot. No production costs are included."
+  ],
+  "crops": {
+    "wheat": {
+      "notes": [],
+      "yield_t_ha": 3.1,
+      "yield_years": "2022-2024 mean",
+      "yield_by_year": {
+        "2022": 2.92,
+        "2023": 3.118,
+        "2024": 3.268
+      },
+      "price_per_t": 89217,
+      "price_years": "2024",
+      "price_by_year": {
+        "2020": 46433,
+        "2021": 53800,
+        "2022": 71356,
+        "2023": 115148,
+        "2024": 89217
+      }
+    },
+    "rice": {
+      "notes": [
+        "FAOSTAT item 'Rice' is paddy (unmilled) rice for all varieties; basmati and coarse rice prices differ a lot.",
+        "FAOSTAT price changed 1.9x between 2022 (150,596) and 2024 (284,830 PKR/t); check against a local market price."
+      ],
+      "yield_t_ha": 3.83,
+      "yield_years": "2022-2024 mean",
+      "yield_by_year": {
+        "2022": 3.69,
+        "2023": 4.066,
+        "2024": 3.741
+      },
+      "price_per_t": 284830,
+      "price_years": "2024",
+      "price_by_year": {
+        "2016": 20200,
+        "2020": 106268,
+        "2021": 109644,
+        "2022": 150596,
+        "2024": 284830
+      }
+    },
+    "maize": {
+      "notes": [],
+      "yield_t_ha": 6.15,
+      "yield_years": "2022-2024 mean",
+      "yield_by_year": {
+        "2022": 6.389,
+        "2023": 5.934,
+        "2024": 6.133
+      },
+      "price_per_t": 97164,
+      "price_years": "2024",
+      "price_by_year": {
+        "2020": 39293,
+        "2021": 45854,
+        "2022": 58035,
+        "2023": 77543,
+        "2024": 97164
+      }
+    },
+    "mung_bean": {
+      "notes": [
+        "No FAOSTAT item for mung bean in Pakistan ('Beans, dry' is a different crop); enter local values."
+      ]
+    },
+    "berseem": {
+      "notes": [
+        "Berseem is a fodder crop with no FAOSTAT yield or price; enter local values."
+      ]
+    }
+  }
+}
