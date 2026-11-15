@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DISTRICTS, LEVEL_LABEL } from "../lib/labels";
-import type { AdviceTip, DataNote, Location, RiskLevel } from "../types";
+import type { AdviceTip, DataNote, Location, RainSource, RiskLevel } from "../types";
 
 export function LevelBadge({ level, big }: { level: RiskLevel | null; big?: boolean }) {
   return (
@@ -39,6 +39,17 @@ export function DataNoteLine({ note }: { note: DataNote | null }) {
   );
 }
 
+/** Which rain fed the scores (GPM satellite or NASA POWER), flagged when the two disagree a lot. */
+export function RainSourceNote({ rain }: { rain: RainSource | null | undefined }) {
+  if (!rain) return null;
+  const big = rain.difference_pct != null && Math.abs(rain.difference_pct) >= 30;
+  return (
+    <p className={`rain-note small ${big ? "warn" : ""}`}>
+      <strong>{rain.source === "gpm" ? "Rain: NASA GPM satellite" : "Rain: NASA POWER"}.</strong> {rain.message}
+    </p>
+  );
+}
+
 export function AdviceList({ tips, urdu }: { tips: AdviceTip[]; urdu: boolean }) {
   if (!tips.length) return null;
   return (
@@ -64,7 +75,13 @@ export function LocationPicker({ value, onChange }: { value: Location; onChange:
   const match = DISTRICTS.find(
     (d) => d.location.latitude === value.latitude && d.location.longitude === value.longitude,
   );
-  const [custom, setCustom] = useState(!match);
+  // "Other location…" can be picked while still on a district's point, so it needs its own flag;
+  // a point off the district list (e.g. a map click) is always custom.
+  const [forceCustom, setCustom] = useState(false);
+  const custom = forceCustom || !match;
+  useEffect(() => {
+    if (match) setCustom(false);
+  }, [match]);
   return (
     <div className="row">
       <label className="field">
@@ -122,12 +139,14 @@ export function LineChart({
   unit,
   height = 140,
   zeroLine,
+  digits = 2,
 }: {
   points: { x: string; y: number | null }[];
   color?: string;
   unit: string;
   height?: number;
   zeroLine?: boolean;
+  digits?: number; // decimals on the min/max axis labels
 }) {
   const ys = points.map((p) => p.y).filter((y): y is number => y != null);
   if (ys.length < 2) return <p className="muted small">Not enough data to draw.</p>;
@@ -159,10 +178,10 @@ export function LineChart({
       <line className="axis" x1={pad.l} x2={w - pad.r} y1={height - pad.b} y2={height - pad.b} />
       {zeroLine && <line className="axis" strokeDasharray="4 3" x1={pad.l} x2={w - pad.r} y1={y(0)} y2={y(0)} />}
       <text x={pad.l - 4} y={pad.t + 5} textAnchor="end">
-        {max.toFixed(2)}
+        {max.toFixed(digits)}
       </text>
       <text x={pad.l - 4} y={height - pad.b} textAnchor="end">
-        {min.toFixed(2)}
+        {min.toFixed(digits)}
       </text>
       <text x={pad.l} y={height - 6}>
         {first}

@@ -93,7 +93,72 @@ def test_uses_nearest_saved_sample_when_unreachable(tmp_path):
     client = _client(tmp_path, handler)
     info = asyncio.run(client.get(Location(latitude=30.2, longitude=71.47)))
     assert info.from_sample and info.texture_class == "loam"
-    assert asyncio.run(client.get(Location(latitude=25.0, longitude=68.0))) is None  # no sample within 25 km
+    # No sample within 25 km: "service down" is reported as such, not as "no soil data here".
+    with pytest.raises(soilgrids.SoilGridsUnavailable):
+        asyncio.run(client.get(Location(latitude=25.0, longitude=68.0)))
+    with pytest.raises(soilgrids.SoilGridsUnavailable):  # remembered for a short while, without waiting again
+        asyncio.run(client.get(Location(latitude=25.0, longitude=68.0)))
+
+
+def test_retries_once_after_a_timeout(tmp_path):
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) == 1:
+            raise httpx.ReadTimeout("slow")
+        lat, lon = float(request.url.params["lat"]), float(request.url.params["lon"])
+        return httpx.Response(200, json=_payload(lat, lon, 23.5))
+
+    info = asyncio.run(_client(tmp_path, handler).get(Location(latitude=30.2, longitude=71.47)))
+    assert len(calls) == 2 and info.texture_class == "loam" and not info.from_sample
+
+
+def test_whole_search_has_one_time_limit(tmp_path):
+    async def slow(request):
+        await asyncio.sleep(5)
+        return httpx.Response(200, json={})
+
+    http = httpx.AsyncClient(transport=httpx.MockTransport(slow))
+    client = SoilGridsClient(Settings(sample_data_dir=tmp_path, soilgrids_timeout_seconds=0.05), http=http)
+    started = asyncio.run(_timed(client.get, Location(latitude=30.2, longitude=71.47)))
+    assert started < 2  # gave up after ~0.1 s, not after 5 s per point
+
+
+async def _timed(fn, *args):
+    import time as _t
+
+    t = _t.perf_counter()
+    try:
+        await fn(*args)
+    except soilgrids.SoilGridsUnavailable:
+        pass
+    return _t.perf_counter() - t
+
+
+def test_soil_endpoint_says_503_when_service_is_down_and_404_when_no_data(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.api.dependencies import get_soil_client
+    from app.main import app
+
+    def down(request):
+        raise httpx.ConnectError("offline")
+
+    def empty(request):
+        lat, lon = float(request.url.params["lat"]), float(request.url.params["lon"])
+        return httpx.Response(200, json=_payload(lat, lon, None))
+
+    try:
+        app.dependency_overrides[get_soil_client] = lambda: _client(tmp_path, down)
+        r = TestClient(app).get("/api/soil", params={"latitude": 25.0, "longitude": 68.0})
+        assert r.status_code == 503 and "not responding" in r.json()["detail"]
+        soilgrids._failed.clear()
+        app.dependency_overrides[get_soil_client] = lambda: _client(tmp_path, empty)
+        r = TestClient(app).get("/api/soil", params={"latitude": 24.0, "longitude": 67.0})
+        assert r.status_code == 404 and "Pick a field nearby" in r.json()["detail"]
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_paddy_percolation_follows_texture():
@@ -150,6 +215,9 @@ def test_failure_is_remembered_so_repeats_do_not_wait_again(tmp_path):
 
     client = _client(tmp_path, handler)
     point = Location(latitude=30.2, longitude=71.47)
-    assert asyncio.run(client.get(point)) is None  # no saved sample in tmp_path
-    asyncio.run(client.get(point))
-    assert len(calls) == 1  # second call used the remembered failure
+    with pytest.raises(soilgrids.SoilGridsUnavailable):  # no saved sample in tmp_path
+        asyncio.run(client.get(point))
+    assert len(calls) == 2  # one retry after the timeout
+    with pytest.raises(soilgrids.SoilGridsUnavailable):
+        asyncio.run(client.get(point))
+    assert len(calls) == 2  # second call used the remembered failure

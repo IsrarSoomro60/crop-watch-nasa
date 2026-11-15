@@ -84,7 +84,10 @@ def explain(r: RankedRotation, current: RankedRotation, profiles: CropProfileRep
     # Information gaps
     gaps: list[str] = []
     if r.missing_dimensions:
-        gaps.append(f"Not scored: missing {', '.join(r.missing_dimensions)} while other rotations have it.")
+        gaps.append(
+            f"Partial score: {', '.join(r.missing_dimensions)} could not be worked out for this rotation, so the "
+            "score uses only the other dimensions. Compare it with full scores with care."
+        )
     inc = r.evaluation.income
     if inc is None or inc.gross_revenue is None:
         gaps.append("Income not assessed: a crop has no yield or price (enter local values).")

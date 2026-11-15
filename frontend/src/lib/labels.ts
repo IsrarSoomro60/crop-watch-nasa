@@ -39,6 +39,12 @@ export const DISTRICTS: { name: string; location: Location }[] = [
   { name: "Hyderabad", location: { latitude: 25.4, longitude: 68.37 } },
 ];
 
+/** Farmers enter land in acres; the API works in hectares. 1 international acre = 0.40468564224 ha. */
+export const HA_PER_ACRE = 0.40468564224;
+export const acresToHa = (acres: number) => acres * HA_PER_ACRE;
+/** Rounded to 2 decimals so 5 acres typed in shows back as 5, not 4.999999. */
+export const haToAcres = (ha: number) => Math.round((ha / HA_PER_ACRE) * 100) / 100;
+
 /** Example rotations for one kharif + rabi cycle inside the saved sample (June 2025 - May 2026). */
 export function presetRotations(area: number): { current: Rotation; alternatives: Rotation[] } {
   return {

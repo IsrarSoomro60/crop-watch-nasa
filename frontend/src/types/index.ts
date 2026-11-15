@@ -42,6 +42,13 @@ export interface ComparisonRequest {
   alternatives: Rotation[];
   priorities: Priorities;
   economics?: Partial<Record<CropName, CropEconomics>>; // farmer values; FAOSTAT defaults fill gaps
+  scenario?: ClimateScenario | null; // what-if test, not a forecast
+}
+
+/** Mirrors backend ClimateScenario: shifts observed temperature and scales observed rain before scoring. */
+export interface ClimateScenario {
+  temperature_change_c: number; // -5 to +5
+  rainfall_change_pct: number; // -80 to +80
 }
 
 export interface CropEconomics {
@@ -184,6 +191,7 @@ export interface RankedRotation {
   rotation_name: string;
   is_current: boolean;
   preference_score: number | null;
+  partial: boolean; // score leaves out missing_dimensions (weights re-normalised over the rest)
   dimension_scores: DimensionScores;
   missing_dimensions: string[]; // score withheld when non-empty
   evaluation: RotationEvaluation;
@@ -221,8 +229,22 @@ export interface EnvironmentalData {
   data_note: DataNote;
 }
 
+/** Which rain the comparison used: GPM IMERG satellite rain where saved, otherwise NASA POWER. */
+export interface RainSource {
+  source: "gpm" | "power";
+  district: string | null;
+  days_total: number;
+  days_gpm: number;
+  days_late: number; // GPM Late run days (not gauge-calibrated)
+  gpm_total_mm: number | null;
+  power_total_mm: number | null;
+  difference_pct: number | null; // (GPM - POWER) / POWER
+  message: string;
+}
+
 export interface Recommendation {
   ranked: RankedRotation[];
+  rain_source: RainSource | null;
   explanation: string[];
   limitations: string[];
   resilience_risks: RiskType[]; // risks the resilience comparison is based on

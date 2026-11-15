@@ -1,4 +1,7 @@
-"""Fetch MODIS NDVI and SMAP soil moisture for the demo districts from NASA AppEEARS.
+"""Fetch NASA AppEEARS data for the demo districts.
+
+Sets: satellite (default: MODIS NDVI + SMAP soil moisture), field (ECOSTRESS land-surface temperature and
+evapotranspiration, HLS Landsat/Sentinel-2 NDVI at 30 m), terrain (NASADEM elevation boxes for slope).
 
 Needs a free NASA Earthdata account (https://urs.earthdata.nasa.gov/users/new). Put the
 credentials in backend/.env (never commit it):
@@ -8,6 +11,8 @@ credentials in backend/.env (never commit it):
 
 Run from backend/:
     uv run python -m scripts.fetch_appeears [START END]     # dates YYYY-MM-DD
+    uv run python -m scripts.fetch_appeears --set field START END
+    uv run python -m scripts.fetch_appeears --set terrain
     uv run python -m scripts.fetch_appeears --task TASK_ID  # download a finished task
 
 AppEEARS runs point requests as background tasks, usually a few minutes to an hour.
@@ -35,17 +40,52 @@ LAYERS = [
     {"product": "SPL4SMGP.008", "layer": "Geophysical_Data_sm_rootzone"},  # 9 km, m3/m3, fill -9999
     {"product": "SPL4SMGP.008", "layer": "Geophysical_Data_sm_surface"},
 ]
+# Field-scale set (checked against the AppEEARS catalogue on 2026-11-15). ECOSTRESS revisits are irregular
+# (ISS orbit) and often cloudy; the cloud layers are kept so cloudy readings can be dropped.
+FIELD_LAYERS = [
+    {"product": "ECO_L2T_LSTE.002", "layer": "LST"},  # 70 m land-surface temperature, Kelvin
+    {"product": "ECO_L2T_LSTE.002", "layer": "cloud"},  # 1 = cloud
+    {"product": "ECO_L3T_JET.002", "layer": "ETdaily"},  # 70 m daily evapotranspiration
+    {"product": "ECO_L3T_JET.002", "layer": "cloud"},
+    {"product": "HLSL30_VI.020", "layer": "NDVI"},  # Landsat 8/9, 30 m, scale 0.0001, fill -19999
+    {"product": "HLSS30_VI.020", "layer": "NDVI"},  # Sentinel-2, 30 m
+    {"product": "HLSL30.020", "layer": "Fmask"},  # cloud / shadow bits for the NDVI above
+    {"product": "HLSS30.020", "layer": "Fmask"},
+]
+LAYER_SETS = {"satellite": LAYERS, "field": FIELD_LAYERS}
+# Terrain is static, so it is an area task: slope needs neighbouring pixels, not one point.
+TERRAIN_LAYERS = [{"product": "NASADEM_NC.001", "layer": "NASADEM_HGT"}]  # 30 m elevation, metres
+TERRAIN_HALF_BOX_DEG = 0.05  # ~11 km x 11 km around each district point
 POLL_SECONDS = 30
 MAX_WAIT_SECONDS = 2 * 60 * 60
 
 
-def build_task(start: date, end: date, name: str) -> dict:
+def build_terrain_task(name: str) -> dict:
+    features = []
+    for district, (lat, lon) in DEMO_DISTRICTS.items():
+        d = TERRAIN_HALF_BOX_DEG
+        ring = [[lon - d, lat - d], [lon + d, lat - d], [lon + d, lat + d], [lon - d, lat + d], [lon - d, lat - d]]
+        features.append({"type": "Feature", "properties": {"id": district.lower()},
+                         "geometry": {"type": "Polygon", "coordinates": [ring]}})
+    return {
+        "task_type": "area",
+        "task_name": name,
+        "params": {
+            "dates": [{"startDate": "02-11-2000", "endDate": "02-21-2000"}],  # the SRTM/NASADEM mission
+            "layers": TERRAIN_LAYERS,
+            "geo": {"type": "FeatureCollection", "features": features},
+            "output": {"format": {"type": "geotiff"}, "projection": "geographic"},
+        },
+    }
+
+
+def build_task(start: date, end: date, name: str, layers: list[dict] | None = None) -> dict:
     return {
         "task_type": "point",
         "task_name": name,
         "params": {
             "dates": [{"startDate": start.strftime("%m-%d-%Y"), "endDate": end.strftime("%m-%d-%Y")}],
-            "layers": LAYERS,
+            "layers": layers or LAYERS,
             "coordinates": [
                 {"id": district.lower(), "category": "demo_district", "latitude": lat, "longitude": lon}
                 for district, (lat, lon) in DEMO_DISTRICTS.items()
@@ -65,14 +105,21 @@ def login(http: httpx.Client, settings: Settings) -> str:
     return resp.json()["token"]
 
 
-def run(start: date, end: date, http: httpx.Client | None = None, settings: Settings | None = None) -> Path:
+def run(start: date, end: date, http: httpx.Client | None = None, settings: Settings | None = None,
+        layer_set: str = "satellite") -> Path:
     settings = settings or get_settings()
     http = http or httpx.Client(timeout=120)
     token = login(http, settings)
     auth = {"Authorization": f"Bearer {token}"}
-    name = f"cropwatch_{start:%Y%m%d}_{end:%Y%m%d}"
+    if layer_set == "terrain":
+        name = "cropwatch_terrain_nasadem"
+        body = build_terrain_task(name)
+    else:
+        prefix = "cropwatch" if layer_set == "satellite" else f"cropwatch_{layer_set}"
+        name = f"{prefix}_{start:%Y%m%d}_{end:%Y%m%d}"
+        body = build_task(start, end, name, LAYER_SETS[layer_set])
 
-    task = http.post(f"{API}/task", json=build_task(start, end, name), headers=auth)
+    task = http.post(f"{API}/task", json=body, headers=auth)
     task.raise_for_status()
     task_id = task.json()["task_id"]
     print(f"Submitted AppEEARS task {task_id} ({name}); polling every {POLL_SECONDS}s")
@@ -89,7 +136,7 @@ def run(start: date, end: date, http: httpx.Client | None = None, settings: Sett
         waited += POLL_SECONDS
 
     out = download(http, auth, task_id, settings.sample_data_dir / "appeears" / name)
-    (out / "task.json").write_text(json.dumps({"task_id": task_id, **build_task(start, end, name)}, indent=2))
+    (out / "task.json").write_text(json.dumps({"task_id": task_id, **body}, indent=2))
     http.post(f"{API}/logout", headers=auth)
     return out
 
@@ -127,5 +174,11 @@ if __name__ == "__main__":
     if len(args) == 2 and args[0] == "--task":
         fetch_existing(args[1])
         sys.exit(0)
+    # --set satellite (default: MODIS NDVI + SMAP) | field (ECOSTRESS + HLS) | terrain (NASADEM area, no dates)
+    layer_set = "satellite"
+    if len(args) >= 2 and args[0] == "--set":
+        layer_set, args = args[1], args[2:]
+        if layer_set not in (*LAYER_SETS, "terrain"):
+            sys.exit(f"Unknown set {layer_set!r}; use satellite, field or terrain.")
     rng = (date.fromisoformat(args[0]), date.fromisoformat(args[1])) if len(args) == 2 else DEFAULT_RANGE
-    run(*rng)
+    run(*rng, layer_set=layer_set)

@@ -140,12 +140,15 @@ class RecommendationEngine:
         explanation: list[str] = []
         for rotation, evaluation, scores in zip(rotations, evaluations, all_scores, strict=True):
             missing = sorted(d for d in required if getattr(scores, d) is None)
-            score = None if missing else preference_score(scores, request.priorities)
+            # Partial score: the weighted average of the dimensions this rotation does have (weights
+            # re-normalised over them). Missing data is left out, never counted as zero, and flagged.
+            score = preference_score(scores, request.priorities)
             ranked.append(
                 RankedRotation(
                     rotation_name=rotation.name,
                     is_current=rotation.is_current,
                     preference_score=score,
+                    partial=bool(missing) and score is not None,
                     dimension_scores=scores,
                     missing_dimensions=missing,
                     evaluation=evaluation,
@@ -165,14 +168,17 @@ class RecommendationEngine:
             bare = f", {gc.bare_soil_days_per_year:.0f} bare-soil days/year" if gc else ""
             parts = (f"soil-health indicator {ds.soil_health}{bare}, water {ds.water}{need}, "
                      f"resilience {ds.resilience}")
-            if r.preference_score is not None:
-                explanation.append(f"{r.rotation_name}: score {r.preference_score:.2f} ({parts})")
-            else:
-                crops = unassessed_crops(r.evaluation, common)
-                why = f"; crops without assessed risks: {', '.join(crops)}" if crops else ""
+            crops = unassessed_crops(r.evaluation, common)
+            why = f"; crops without assessed risks: {', '.join(crops)}" if crops else ""
+            if r.preference_score is None:
+                explanation.append(f"{r.rotation_name}: not scored, no dimension could be worked out{why} ({parts})")
+            elif r.partial:
                 explanation.append(
-                    f"{r.rotation_name}: not scored, missing {', '.join(r.missing_dimensions)}{why} ({parts})"
+                    f"{r.rotation_name}: partial score {r.preference_score:.2f}, without "
+                    f"{', '.join(r.missing_dimensions)}{why} ({parts})"
                 )
+            else:
+                explanation.append(f"{r.rotation_name}: score {r.preference_score:.2f} ({parts})")
         if common:
             explanation.append(
                 "Resilience compares the risks assessed for every crop in the current rotation: "

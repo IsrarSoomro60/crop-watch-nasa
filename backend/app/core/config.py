@@ -27,9 +27,10 @@ class Settings(BaseSettings):
     nasa_cache_ttl_seconds: int = 6 * 60 * 60
     soilgrids_base_url: str = "https://rest.isric.org/soilgrids/v2.0/properties/query"
     # SoilGrids sometimes hangs under load; soil is optional context, so give up sooner than for weather.
-    soilgrids_timeout_seconds: float = 15.0
-    # After SoilGrids fails, use the fallback for this long before trying the live service again.
-    soilgrids_retry_after_seconds: float = 15 * 60
+    # Raised from 15 s in Nov 2026: SoilGrids often took 20-60 s to answer, so most lookups failed.
+    soilgrids_timeout_seconds: float = 30.0
+    # After SoilGrids fails, use the fallback (or say it is down) for this long before trying again.
+    soilgrids_retry_after_seconds: float = 2 * 60
 
     crop_profiles_dir: Path = APP_DIR / "domain" / "crop_profiles"
     database_path: Path = APP_DIR.parent / "var" / "cropwatch.db"

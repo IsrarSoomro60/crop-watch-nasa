@@ -9,6 +9,7 @@ life of the process (soil does not change) and saved samples are used when the
 service cannot be reached (see scripts/fetch_sample_data.py).
 """
 
+import asyncio
 import json
 import math
 import time
@@ -119,6 +120,13 @@ def sample_files(sample_dir: Path) -> list[Path]:
     return sorted(sample_dir.glob("soilgrids_*.json"))
 
 
+class SoilGridsUnavailable(httpx.HTTPError):
+    """SoilGrids did not answer and no saved sample is near. Not the same as "no soil data here".
+
+    A subclass of httpx.HTTPError so callers that already treat soil as optional context keep working.
+    """
+
+
 class SoilGridsClient:
     def __init__(self, settings: Settings, http: httpx.AsyncClient | None = None):
         self._settings = settings
@@ -127,7 +135,11 @@ class SoilGridsClient:
     async def _query(self, http: httpx.AsyncClient, point: Location) -> dict[str, Any]:
         params = [("lon", point.longitude), ("lat", point.latitude), ("value", "mean")]
         params += [("property", p) for p in PROPERTIES] + [("depth", d) for d in DEPTHS]
-        resp = await http.get(self._settings.soilgrids_base_url, params=params)
+        try:
+            resp = await http.get(self._settings.soilgrids_base_url, params=params)
+        except httpx.TimeoutException:
+            # SoilGrids often hangs once and then answers quickly: one more try before giving up.
+            resp = await http.get(self._settings.soilgrids_base_url, params=params)
         resp.raise_for_status()
         return resp.json()
 
@@ -147,12 +159,22 @@ class SoilGridsClient:
             return saved
         failed = _failed.get(key)
         if failed is not None and failed[0] > time.monotonic():
-            return failed[1]  # SoilGrids failed recently: don't wait for it again yet
+            # SoilGrids failed recently: don't wait for it again yet.
+            if failed[1] is None:
+                raise SoilGridsUnavailable("SoilGrids is not responding and no saved sample is nearby")
+            return failed[1]
         try:
-            info = await self._search(point)
-        except httpx.HTTPError:
+            # One overall limit, so stepping out to nearby points can't add up to minutes of waiting.
+            budget = self._settings.soilgrids_timeout_seconds * 2
+            try:
+                info = await asyncio.wait_for(self._search(point), timeout=budget)
+            except TimeoutError as exc:
+                raise httpx.TimeoutException(f"SoilGrids search took over {budget:.0f} s") from exc
+        except httpx.HTTPError as exc:
             fallback = self._nearest_sample(point)
             _failed[key] = (time.monotonic() + self._settings.soilgrids_retry_after_seconds, fallback)
+            if fallback is None:
+                raise SoilGridsUnavailable(f"SoilGrids is not responding ({type(exc).__name__})") from exc
             return fallback
         # Soil does not change, so both answers (data, or "no data here") are kept for good.
         _cache[key] = info

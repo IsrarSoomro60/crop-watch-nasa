@@ -1,12 +1,24 @@
 :root {
-  --bg: #f6f5f0;
+  /* Farm-management look: white canvas, mint sidebar, fresh greens, pill controls, soft shadows. */
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #efede6;
-  --text: #1f2421;
-  --muted: #5d655f;
-  --border: #d9d6cc;
-  --accent: #2f6b3a;
+  --surface-2: #f1f5f1;
+  --sidebar: #eaf5ec;
+  --text: #1c2420;
+  --muted: #69736c;
+  --border: #e5ebe6;
+  --field-bg: #eef0ee;
+  --field-border: #d6dbd7;
+  --accent: #23753a;
+  --accent-soft: #d9eedd;
   --accent-text: #ffffff;
+  --teal: #3f9b4f;
+  --lime: #8bc34a;
+  --amber: #f5a91a;
+  --warn: #8a5a0f;
+  --warn-bg: #fff7e6;
+  --info: #2b67b8;
+  --info-bg: #eef4fd;
   --low: #2f7d46;
   --low-bg: #e3f1e6;
   --moderate: #9a6400;
@@ -15,10 +27,12 @@
   --high-bg: #f9e0dd;
   --na: #6b6f6c;
   --na-bg: #ecebe7;
-  --chart-1: #2f6b3a;
-  --chart-2: #2a6f97;
-  --chart-3: #9a6400;
-  --radius: 10px;
+  --chart-1: #2e8b4e;
+  --chart-2: #2b67b8;
+  --chart-3: #d4a300;
+  --radius: 18px;
+  --shadow: 0 6px 22px rgb(24 48 30 / 0.06);
+  --shadow-pill: 0 3px 12px rgb(24 48 30 / 0.1);
   color-scheme: light;
 }
 
@@ -30,8 +44,21 @@
     --text: #e8ebe7;
     --muted: #a3aba4;
     --border: #353b36;
-    --accent: #6fbf7e;
+    --accent: #6cc58a;
+    --accent-soft: #1f3a27;
+    --sidebar: #172019;
+    --field-bg: #262b27;
+    --field-border: #3a413c;
+    --lime: #9ccc65;
+    --amber: #f5b942;
+    --shadow-pill: 0 2px 8px rgb(0 0 0 / 0.35);
     --accent-text: #0f1a12;
+    --teal: #4fc2b8;
+    --warn: #f0b84f;
+    --warn-bg: #3a2f17;
+    --info: #74b6dd;
+    --info-bg: #1b2c38;
+    --shadow: none;
     --low: #7fd093;
     --low-bg: #1f3325;
     --moderate: #f0b84f;
@@ -40,7 +67,7 @@
     --high-bg: #3d211e;
     --na: #a3aba4;
     --na-bg: #2a2e2b;
-    --chart-1: #7fd093;
+    --chart-1: #6cc58a;
     --chart-2: #74b6dd;
     --chart-3: #f0b84f;
     color-scheme: dark;
@@ -53,7 +80,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 16px/1.5 "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 .app { max-width: 960px; margin: 0 auto; padding: 16px; }
@@ -71,7 +98,7 @@ header.top p { margin: 4px 0 0; color: var(--muted); }
 
 .card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 16px; margin-bottom: 16px;
+  padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow);
 }
 .card h2, .card h3 { margin-top: 0; }
 .card h2 { font-size: 1.15rem; }
@@ -141,3 +168,24 @@ svg.chart .axis { stroke: var(--border); }
   .app { padding: 12px 16px; }
   .rank .pos { font-size: 1.1rem; }
 }
+
+/* Location map (Leaflet) */
+.map-wrap { margin-top: 12px; }
+.map-wrap p { margin: 6px 0 0; }
+.map { height: 340px; width: 100%; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); z-index: 0; }
+.map .leaflet-control-layers, .map .leaflet-bar a, .map .leaflet-control-attribution {
+  background: var(--surface); color: var(--text); border-color: var(--border);
+}
+.map .leaflet-control-attribution a { color: var(--accent); }
+.map .leaflet-control-layers label { font-size: 0.85rem; }
+@media (max-width: 600px) { .map { height: 260px; } }
+.map-box { position: relative; }
+.map-locate {
+  position: absolute; left: 10px; bottom: 28px; z-index: 1000;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px;
+  font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  background: var(--surface); color: var(--accent); border: 1px solid var(--border); border-radius: 999px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+}
+.map-locate:disabled { opacity: 0.7; cursor: wait; }
+.map-wrap .error { margin: 6px 0 0; }

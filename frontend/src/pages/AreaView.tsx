@@ -4,6 +4,16 @@ import { fmt } from "../lib/labels";
 import { api } from "../services/api";
 import type { Location, SatelliteData, SoilInfo } from "../types";
 
+/** Plain-language soil error: the API's own sentence where it gives one, never a raw HTTP dump. */
+function soilMessage(e: unknown): string {
+  const text = e instanceof Error ? e.message : String(e);
+  const detail = text.match(/"detail"\s*:\s*"([^"]+)"/)?.[1];
+  if (detail) return detail;
+  if (text.startsWith("503") || /fetch|network/i.test(text))
+    return "The SoilGrids soil service is not responding right now. Try again in a few minutes.";
+  return "Soil data could not be loaded. Try again in a few minutes.";
+}
+
 export default function AreaView({ location }: { location: Location }) {
   const [soil, setSoil] = useState<SoilInfo | null>(null);
   const [sat, setSat] = useState<SatelliteData | null>(null);
@@ -11,23 +21,34 @@ export default function AreaView({ location }: { location: Location }) {
   const [satErr, setSatErr] = useState<string | null>(null);
   const [soilLoading, setSoilLoading] = useState(false);
   const [satLoading, setSatLoading] = useState(false);
+  const [soilAttempt, setSoilAttempt] = useState(0);
 
   useEffect(() => {
     let live = true;
     setSoil(null);
-    setSat(null);
     setSoilErr(null);
-    setSatErr(null);
-    const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
     // Wait until typing stops: SoilGrids allows only ~5 requests a minute.
     const timer = setTimeout(() => {
       setSoilLoading(true);
-      setSatLoading(true);
       api
         .soil(location.latitude, location.longitude)
         .then((s) => live && setSoil(s))
-        .catch((e) => live && setSoilErr(msg(e)))
+        .catch((e) => live && setSoilErr(soilMessage(e)))
         .finally(() => live && setSoilLoading(false));
+    }, 700);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [location.latitude, location.longitude, soilAttempt]);
+
+  useEffect(() => {
+    let live = true;
+    setSat(null);
+    setSatErr(null);
+    const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+    const timer = setTimeout(() => {
+      setSatLoading(true);
       api
         .satellite(location.latitude, location.longitude)
         .then((t) => live && setSat(t))
@@ -47,7 +68,14 @@ export default function AreaView({ location }: { location: Location }) {
       <section className="card">
         <h2>Soil</h2>
         {soilLoading && <p className="muted small">Loading SoilGrids (can take up to a minute)…</p>}
-        <ErrorBox error={soilErr} />
+        {soilErr && (
+          <div className="note small">
+            <p style={{ margin: "0 0 8px" }}>{soilErr}</p>
+            <button className="secondary small-btn" onClick={() => setSoilAttempt((n) => n + 1)} disabled={soilLoading}>
+              Try again
+            </button>
+          </div>
+        )}
         {soil && (
           <>
             <p>

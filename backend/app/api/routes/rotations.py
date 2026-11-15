@@ -11,8 +11,10 @@ from app.repositories.crop_profiles import get_crop_profile_repository as _profi
 from app.schemas.crop import CropProfile
 from app.schemas.recommendation import ComparisonRequest, Recommendation
 from app.schemas.soil import SoilInfo
+from app.services.gpm import apply_gpm
 from app.services.nasa.client import NasaPowerClient
 from app.services.recommendation.recommendation_engine import RecommendationEngine
+from app.services.scenario import apply_scenario, scenario_note
 from app.services.soil.soilgrids import SoilGridsClient
 
 router = APIRouter(prefix="/rotations", tags=["rotations"])
@@ -69,9 +71,17 @@ async def compare_rotations(
         }
         fallback = {k: h.water for k, h in matched.items() if h is not None and h.water is not None}
         risk_fallback = {k: h for k, h in matched.items() if h is not None and h.per_year}
+    # GPM satellite rain replaces POWER rain where saved (demo districts); a what-if scenario then scales it.
+    observations, rain_source = apply_gpm(env.observations, request.location)
+    observations = apply_scenario(observations, request.scenario)
     recommendation = engine.compare(
-        request, env.observations, elevation_m=env.data_note.elevation_m, soil=soil, water_fallback=fallback,
+        request, observations, elevation_m=env.data_note.elevation_m, soil=soil, water_fallback=fallback,
         risk_fallback=risk_fallback,
     )
     recommendation.data_note = env.data_note
+    recommendation.rain_source = rain_source
+    note = scenario_note(request.scenario)
+    if note:
+        # New list: LIMITATIONS is a shared module-level constant.
+        recommendation.limitations = [note, *recommendation.limitations]
     return recommendation

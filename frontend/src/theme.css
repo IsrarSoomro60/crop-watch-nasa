@@ -1,0 +1,114 @@
+/*
+ * Visual skin: farm-management look (white canvas, mint sidebar, pill-shaped controls, soft shadows,
+ * colour-topped stat tiles, flat progress bars). Appearance only: no layout, structure or sections change.
+ * Loaded after styles.css and dashboard.css so it can restyle their classes.
+ */
+
+body { -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-weight: 700; letter-spacing: -0.2px; }
+input[type="range"] { accent-color: var(--accent); }
+
+/* ---------- Top bar: clean white strip, pill controls ---------- */
+.topbar { background: var(--bg); border-bottom: 0; box-shadow: 0 1px 0 var(--border); }
+.brand { font-weight: 700; letter-spacing: 0.2px; color: var(--accent); }
+.brand small { color: var(--amber); font-weight: 600; letter-spacing: 0.6px; }
+.brand-mark { border-radius: 50%; box-shadow: var(--shadow-pill); }
+.top-actions { gap: 14px; }
+.top-actions select {
+  border: 0; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-pill);
+  padding: 8px 14px; min-height: 44px;
+}
+.icon-btn, .avatar { width: 46px; height: 46px; border: 0; border-radius: 50%; box-shadow: var(--shadow-pill); }
+.avatar { background: var(--accent-soft); }
+
+/* ---------- Sidebar: mint panel with white pill buttons ---------- */
+.sidebar { background: var(--sidebar); border-right: 0; }
+.nav { gap: 10px; }
+.nav button {
+  background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-pill);
+  color: var(--muted); font-weight: 500;
+}
+.nav button:hover { background: var(--surface); color: var(--text); }
+.nav button.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; box-shadow: none; }
+.nav-label { color: var(--accent); opacity: 0.7; }
+.side-help { background: var(--surface); box-shadow: var(--shadow-pill); border-radius: 16px; }
+
+/* ---------- Cards: large radius, hairline border, soft shadow ---------- */
+.card, .dcard { border-radius: 18px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.card h2, .section-head h2 { font-size: 1.1rem; }
+.section-note { font-size: 0.78rem; }
+.date-pill { border: 0; border-radius: 999px; box-shadow: var(--shadow-pill); padding: 10px 16px; font-weight: 500; }
+.welcome h1 { font-weight: 700; }
+
+/* ---------- Stat tiles: colour-topped, lightly tinted (one colour per measure) ---------- */
+.metrics .metric { border-radius: 6px; border: 0; border-top: 3px solid var(--tile); background: var(--tile-bg); box-shadow: none; }
+.metrics .metric:nth-child(1) { --tile: #d94b4b; --tile-bg: #fdf1f1; }
+.metrics .metric:nth-child(2) { --tile: #2b67b8; --tile-bg: #eef4fd; }
+.metrics .metric:nth-child(3) { --tile: #2e9c56; --tile-bg: #eef8f1; }
+.metrics .metric:nth-child(4) { --tile: #d4b100; --tile-bg: #fcfaea; }
+@media (prefers-color-scheme: dark) {
+  .metrics .metric:nth-child(1) { --tile-bg: #2b1d1d; }
+  .metrics .metric:nth-child(2) { --tile-bg: #1b2534; }
+  .metrics .metric:nth-child(3) { --tile-bg: #1b2b20; }
+  .metrics .metric:nth-child(4) { --tile-bg: #2c2a17; }
+}
+.metric-top { color: var(--muted); font-weight: 500; }
+.metric-icon { border-radius: 50%; background: var(--surface); color: var(--tile); box-shadow: var(--shadow-pill); }
+.metric-value { font-weight: 700; }
+
+/* ---------- Controls: filled grey selects, flat secondary buttons ---------- */
+select { background: var(--field-bg); border: 1px solid var(--field-border); border-radius: 6px; font-weight: 500; }
+input:not([type="range"]):not([type="checkbox"]) { border-radius: 8px; }
+button.primary { border-radius: 10px; box-shadow: var(--shadow-pill); }
+button.secondary { background: var(--field-bg); border: 1px solid var(--field-border); border-radius: 8px; font-weight: 600; }
+.badge-soft { border-radius: 6px; background: var(--field-bg); color: var(--text); font-weight: 600; }
+.badge-soft.green { background: var(--accent-soft); color: var(--accent); }
+.link-btn { font-weight: 600; font-size: 0.8rem; }
+
+/* ---------- Progress bars: thick, flat, square-ended ---------- */
+.dbar, .bar { height: 12px; border-radius: 2px; background: var(--surface-2); }
+.dbar > span, .bar > span { border-radius: 2px; background: var(--teal); }
+.score-line .dbar > span { background: var(--lime); }
+
+/* ---------- Rotation cards ---------- */
+.rotation.featured { border-color: var(--accent); box-shadow: 0 8px 26px rgb(35 117 58 / 0.14); }
+.rotation-btn { border-radius: 10px; background: var(--field-bg); border-color: var(--field-border); color: var(--text); }
+.rotation.featured .rotation-btn { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+
+/* ---------- Lists: round icon thumbnails, hairline separators ---------- */
+.glance-symbol { border-radius: 50%; background: var(--accent-soft); width: 38px; height: 38px; }
+.glance-left strong { font-weight: 600; }
+.alert { border-radius: 10px; }
+.callout { border-radius: 12px; }
+.tag { border-radius: 4px; padding: 2px 6px; background: rgb(255 255 255 / 0.65); }
+.action { border-radius: 14px; box-shadow: var(--shadow-pill); border: 0; }
+.action:hover { background: var(--accent-soft); }
+
+/* ---------- Partial score tag ---------- */
+.partial-tag {
+  display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; vertical-align: middle;
+  background: var(--warn-bg); color: var(--warn); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* ---------- Rain source note (GPM vs POWER) ---------- */
+.rain-note { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--info-bg); color: var(--text); }
+.rain-note.warn { background: var(--warn-bg); color: var(--warn); }
+
+/* ---------- Map ---------- */
+.map { border-radius: 18px; border: 0; box-shadow: var(--shadow); }
+.map-locate { box-shadow: var(--shadow-pill); border: 0; }
+
+/* ---------- Charts: lighter grid ---------- */
+svg.chart .axis { stroke: var(--border); }
+svg.chart text { fill: var(--muted); }
+
+/* ---------- Mobile: the sidebar strip keeps the mint panel ---------- */
+@media (max-width: 720px) {
+  .sidebar { background: var(--sidebar); }
+  /* Montserrat is wider than the system font: keep brand + controls inside a 375 px phone. */
+  .brand { font-size: 0.95rem; gap: 8px; min-width: 0; }
+  .top-actions { gap: 6px; flex: none; }
+  .icon-btn, .avatar { width: 38px; height: 38px; }
+  .top-actions select { min-height: 38px; max-width: 80px; padding: 4px 8px; }
+}
