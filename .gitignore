@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local tooling output
+graphify-out/
+
+# Local database
+backend/var/
+*.db
+
+# Raw AppEEARS downloads (rebuild with scripts.fetch_appeears --task ID); the compact
+# app/data/sample/satellite_samples.json is committed instead.
+backend/app/data/sample/appeears/

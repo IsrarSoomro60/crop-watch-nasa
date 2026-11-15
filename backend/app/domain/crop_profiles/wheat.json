@@ -1,0 +1,163 @@
+{
+  "crop": "wheat",
+  "display_name": "Wheat",
+  "family": "Poaceae",
+  "is_legume": false,
+  "season": "rabi",
+  "stages": [
+    {
+      "name": "Initial (FAO-56: sowing to ~10% ground cover)",
+      "stage_type": "establishment",
+      "approx_days": 25,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 25,
+          "critical": 30,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop information: wheat",
+            "Wheat seed filling and temperature study",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Optimal max 25 C follows the sources (>25 C by day at grain filling cuts seed filling); the critical limit is the brief's starting value, not stated directly in the sources."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 0,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop information: wheat",
+            "Wheat seed filling and temperature study",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Cold sensitivity varies by growth stage. Sources: growth stops below ~5 C; frost at flowering. Critical limit is the brief's starting value."
+        }
+      ]
+    },
+    {
+      "name": "Crop development (FAO-56: ~10% cover to effective full cover)",
+      "stage_type": "vegetative",
+      "approx_days": 35,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 25,
+          "critical": 30,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop information: wheat",
+            "Wheat seed filling and temperature study",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Optimal max 25 C follows the sources (>25 C by day at grain filling cuts seed filling); the critical limit is the brief's starting value, not stated directly in the sources."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 0,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop information: wheat",
+            "Wheat seed filling and temperature study",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Sources: growth stops below ~5 C; frost at flowering. Critical limit is the brief's starting value."
+        },
+        {
+          "risk": "drought",
+          "variable": "soil_moisture",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "name": "Mid-season (FAO-56: full cover to start of maturity; covers flowering and most grain/pod filling)",
+      "stage_type": "reproductive",
+      "approx_days": 65,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 25,
+          "critical": 32,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop information: wheat",
+            "Wheat seed filling and temperature study",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Optimal max 25 C follows the sources (>25 C by day at grain filling cuts seed filling); the critical limit is the brief's starting value, not stated directly in the sources."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 2,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop information: wheat",
+            "Wheat seed filling and temperature study",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Frost at flowering is a distinct risk to research. Sources: growth stops below ~5 C; frost at flowering. Critical limit is the brief's starting value."
+        },
+        {
+          "risk": "drought",
+          "variable": "soil_moisture",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "name": "Late season (FAO-56: start of maturity to harvest)",
+      "stage_type": "maturity",
+      "approx_days": 40,
+      "thresholds": []
+    }
+  ],
+  "notes": [
+    "Wheat cold sensitivity varies by growth stage."
+  ],
+  "evidence_gaps": [
+    "Temperature limits are provisional starting values from the team research brief; not tuned to local varieties.",
+    "Stage lengths are FAO-56 Table 11 general values, scaled to each season; FAO says they 'may vary substantially' by region and variety and local data should be preferred.",
+    "Waterlogging and disease thresholds are not yet sourced (drought uses the FAO-56 water balance).",
+    "No thresholds for the late season (maturity) yet."
+  ],
+  "stage_lengths_source": "FAO-56 Table 11, 'Grains (small)', planted Oct/Nov, region 'Pakistan; Arid Reg.' (165 days). No wheat-specific Pakistan row exists. https://www.fao.org/4/x0490e/x0490e0b.htm",
+  "kc": {
+    "ini": 0.3,
+    "mid": 1.15,
+    "end": 0.4,
+    "source": "FAO-56 Table 12, https://www.fao.org/4/x0490e/x0490e0b.htm ('Spring Wheat'; Kc ini from the cereals group)",
+    "notes": "Kc end 0.4 is FAO's value for hand-harvested crops (0.25 otherwise). Winter wheat on non-frozen soils would use Kc ini 0.7."
+  },
+  "water_stress": {
+    "zr_max_m": 1.5,
+    "p": 0.55,
+    "source": "FAO-56 Table 22, https://www.fao.org/4/x0490e/x0490e0e.htm ('Spring Wheat', Zr 1.0-1.5 m)",
+    "notes": "Larger Zr of the FAO range, which FAO-56 footnote 1 recommends for modelling soil water stress."
+  }
+}

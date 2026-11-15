@@ -1,0 +1,191 @@
+{
+  "crop": "maize",
+  "display_name": "Maize",
+  "family": "Poaceae",
+  "is_legume": false,
+  "season": "kharif",
+  "stages": [
+    {
+      "name": "Initial (FAO-56: sowing to ~10% ground cover)",
+      "stage_type": "establishment",
+      "approx_days": 20,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 35,
+          "critical": 40,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop water needs, chapter 2",
+            "MapMyCrop maize guide (third-party, not FAO)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Sources give frost on seedlings and >45 C as risky; 35/40 (38 at flowering) are the brief's starting values, partly from a third-party guide."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 10,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop water needs, chapter 2",
+            "MapMyCrop maize guide (third-party, not FAO)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Critical limit is the brief's starting value; sources say frost-free, mean above 15 C."
+        },
+        {
+          "risk": "waterlogging",
+          "variable": "precipitation_mm",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        },
+        {
+          "risk": "drought",
+          "variable": "soil_moisture",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "name": "Crop development (FAO-56: ~10% cover to effective full cover)",
+      "stage_type": "vegetative",
+      "approx_days": 35,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 35,
+          "critical": 40,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop water needs, chapter 2",
+            "MapMyCrop maize guide (third-party, not FAO)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Sources give frost on seedlings and >45 C as risky; 35/40 (38 at flowering) are the brief's starting values, partly from a third-party guide."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 10,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop water needs, chapter 2",
+            "MapMyCrop maize guide (third-party, not FAO)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Critical limit is the brief's starting value; sources say frost-free, mean above 15 C."
+        },
+        {
+          "risk": "drought",
+          "variable": "soil_moisture",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        },
+        {
+          "risk": "waterlogging",
+          "variable": "precipitation_mm",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "name": "Mid-season (FAO-56: full cover to start of maturity; covers flowering and most grain/pod filling)",
+      "stage_type": "reproductive",
+      "approx_days": 40,
+      "thresholds": [
+        {
+          "risk": "heat",
+          "variable": "tmax_c",
+          "warning": 35,
+          "critical": 38,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop water needs, chapter 2",
+            "MapMyCrop maize guide (third-party, not FAO)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Sources give frost on seedlings and >45 C as risky; 35/40 (38 at flowering) are the brief's starting values, partly from a third-party guide. Brief gives this limit for flowering only; it is applied to the whole FAO mid-season, which also covers grain/pod filling."
+        },
+        {
+          "risk": "cold",
+          "variable": "tmin_c",
+          "warning": null,
+          "critical": 10,
+          "min_duration_days": null,
+          "evidence_status": "provisional",
+          "sources": [
+            "FAO crop water needs, chapter 2",
+            "MapMyCrop maize guide (third-party, not FAO)",
+            "Crop-Watch AI research brief, Appendix B (2026-11-11)"
+          ],
+          "notes": "Critical limit is the brief's starting value; sources say frost-free, mean above 15 C. Brief gives this limit for flowering only; it is applied to the whole FAO mid-season, which also covers grain/pod filling."
+        },
+        {
+          "risk": "drought",
+          "variable": "soil_moisture",
+          "warning": null,
+          "critical": null,
+          "min_duration_days": null,
+          "evidence_status": "needs_research",
+          "sources": [],
+          "notes": "Maize can be sensitive to water stress around tasseling and silking."
+        }
+      ]
+    },
+    {
+      "name": "Late season (FAO-56: start of maturity to harvest)",
+      "stage_type": "maturity",
+      "approx_days": 30,
+      "thresholds": []
+    }
+  ],
+  "notes": [],
+  "evidence_gaps": [
+    "Temperature limits are provisional starting values from the team research brief; not tuned to local varieties.",
+    "Stage lengths are FAO-56 Table 11 general values, scaled to each season; FAO says they 'may vary substantially' by region and variety and local data should be preferred.",
+    "Waterlogging and disease thresholds are not yet sourced (drought uses the FAO-56 water balance).",
+    "No thresholds for the late season (maturity) yet."
+  ],
+  "stage_lengths_source": "FAO-56 Table 11, 'Maize (grain)', planted June, region 'Nigeria (humid)' (125 days); the 'India (dry, cool)' row has identical lengths. https://www.fao.org/4/x0490e/x0490e0b.htm",
+  "kc": {
+    "ini": 0.3,
+    "mid": 1.2,
+    "end": 0.35,
+    "source": "FAO-56 Table 12, https://www.fao.org/4/x0490e/x0490e0b.htm ('Maize, Field (grain)'; Kc ini from the cereals group)",
+    "notes": "Kc end 0.35 is for harvest after field drying of the grain (0.60 at high grain moisture)."
+  },
+  "water_stress": {
+    "zr_max_m": 1.7,
+    "p": 0.55,
+    "source": "FAO-56 Table 22, https://www.fao.org/4/x0490e/x0490e0e.htm ('Maize, Field (grain)', Zr 1.0-1.7 m)",
+    "notes": "Larger Zr of the FAO range, which FAO-56 footnote 1 recommends for modelling soil water stress."
+  }
+}
