@@ -198,11 +198,36 @@ export default function HomePage() {
               <div className="welcome">
                 <div>
                   <h1>My farm</h1>
-                  <p className="sub">Choose your district, tap your field on the map, or use your phone's location.</p>
+                  <p className="sub">See your farm, its soil and its weather from space.</p>
                 </div>
               </div>
-              <section className="card">
-                <LocationPicker value={location} onChange={chooseLocation} />
+              <div className="step-head">
+                <img className="step-img" src={ILLUSTRATIONS.pin} alt="" />
+                <div>
+                  <h2>Where is your farm?</h2>
+                  <p>Use your phone's location, choose a district, or tap your field on the map.</p>
+                </div>
+              </div>
+              <section className="card farm-where">
+                <div className="farm-now">
+                  <img src={ILLUSTRATIONS.home} alt="" />
+                  <div>
+                    <span>Your farm</span>
+                    <strong>{place}</strong>
+                  </div>
+                  <button
+                    className="primary big-locate"
+                    onClick={useMyPosition}
+                    disabled={myLoc.status === "locating"}
+                  >
+                    <img src={ILLUSTRATIONS.pin} alt="" />
+                    {myLoc.status === "locating" ? "Finding you…" : "Use my location"}
+                  </button>
+                </div>
+                <div className="farm-or">
+                  <span>or choose a district:</span>
+                  <LocationPicker value={location} onChange={chooseLocation} />
+                </div>
                 <MapPicker
                   value={location}
                   onChange={chooseLocation}

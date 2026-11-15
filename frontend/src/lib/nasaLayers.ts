@@ -18,8 +18,53 @@ export interface NasaLayer {
   what: string;
   read: string;
   caveat: string;
-  legend?: string; // official GIBS colour key, where GIBS publishes one
+  legend?: string; // official GIBS legend image (used where no plain-word scale is defined)
+  scale?: LegendScale; // plain-word colour key built from the GIBS colour map
 }
+
+export interface LegendScale {
+  stops: string[]; // colours, evenly spaced from left to right
+  low: string;
+  high: string;
+  ticks: { at: number; label: string }[]; // at: 0-1 along the bar
+  caption: string;
+}
+
+/** Position of a value on a linear scale, for tick marks. */
+const lin = (v: number, min: number, max: number) => (v - min) / (max - min);
+/** Position on GPM's logarithmic rain scale (0.1 to 53 mm/hr). */
+const logPos = (v: number) => (Math.log10(v) - Math.log10(0.1)) / (Math.log10(53) - Math.log10(0.1));
+const rgb = (s: string) => `rgb(${s})`;
+
+/*
+ * Colour stops sampled every ~10% from NASA GIBS colour maps v1.3 (fetched 2026-11-15):
+ * SMAP_Analyzed_Soil_Moisture.xml (0 to >=0.70 m3/m3), MODIS_Land_Surface_Temp.xml (<200 to >=350 K),
+ * GPM_Precipitation_Rate.xml (0.1 to >=53 mm/hr, logarithmic). These are the maps GIBS links to these layers.
+ */
+const SOIL_SCALE: LegendScale = {
+  stops: ["255,162,0", "255,222,0", "208,231,0", "59,157,0", "0,174,93", "0,252,249", "0,125,255", "0,0,241", "0,0,150", "22,22,100", "72,72,80"].map(rgb),
+  low: "Dry soil",
+  high: "Wet soil",
+  ticks: [0, 0.2, 0.4, 0.6].map((v) => ({ at: lin(v, 0, 0.7), label: v.toFixed(1) })),
+  caption: "Water in the top metre of soil (m³ of water per m³ of soil). Orange = dry, green = moist, blue = wet.",
+};
+
+const K = 273.15;
+const HEAT_SCALE: LegendScale = {
+  stops: ["201,0,255", "101,0,255", "1,0,255", "0,133,255", "4,255,247", "98,255,26", "189,255,0", "255,232,0", "255,157,0", "255,79,0", "255,4,0"].map(rgb),
+  low: "Cold ground",
+  high: "Very hot ground",
+  ticks: [-50, -25, 0, 25, 50, 75].map((c) => ({ at: lin(c + K, 200, 350), label: `${c}°C` })),
+  caption: "Daytime temperature of the ground surface, in °C (NASA gives Kelvin; converted here). Bare ground in summer can pass 50°C.",
+};
+
+const RAIN_SCALE: LegendScale = {
+  stops: ["0,118,78", "0,148,36", "30,178,0", "123,209,0", "239,237,0", "255,152,15", "255,77,45", "250,0,0", "181,0,0", "113,0,0", "51,0,0"].map(rgb),
+  low: "Light rain",
+  high: "Very heavy rain",
+  ticks: [0.1, 1, 10, 50].map((v) => ({ at: logPos(v), label: `${v}` })),
+  caption: "Rain rate in mm per hour, averaged over the day. No colour = no rain.",
+};
 
 export const NASA_LAYERS: NasaLayer[] = [
   {
@@ -48,6 +93,7 @@ export const NASA_LAYERS: NasaLayer[] = [
     what: "Rain on the chosen day from NASA's GPM satellites (IMERG, about 10 km).",
     read: "Coloured areas had rain that day; stronger colours mean heavier rain. Slide day by day to find storms and dry spells.",
     caveat: "A satellite estimate for the whole area, not a rain-gauge reading at your field.",
+    scale: RAIN_SCALE,
   },
   {
     key: "soil",
@@ -61,6 +107,7 @@ export const NASA_LAYERS: NasaLayer[] = [
     what: "Water in the root zone (top metre of soil) from SMAP Level 4, about 9 km.",
     read: "Compare wetter and drier areas and how they change after rain or irrigation seasons.",
     caveat: "A model analysis that uses satellite data, not a measurement in your field. Some days have no image.",
+    scale: SOIL_SCALE,
   },
   {
     key: "heat",
@@ -74,6 +121,7 @@ export const NASA_LAYERS: NasaLayer[] = [
     what: "Average daytime temperature of the ground surface for the month (MODIS Terra).",
     read: "Shows heat hot spots and how the hot season builds month by month.",
     caveat: "Ground-surface temperature, not air temperature; bare ground heats more than crops. ECOSTRESS gives field-scale detail but needs an Earthdata login.",
+    scale: HEAT_SCALE,
   },
   {
     key: "elevation",

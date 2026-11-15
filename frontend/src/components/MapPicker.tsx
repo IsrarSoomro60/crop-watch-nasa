@@ -224,16 +224,12 @@ export default function MapPicker({
       <p className="muted small">
         {showMine ? (
           <>
-            Your location ({value.latitude.toFixed(4)}, {value.longitude.toFixed(4)}), GPS accurate to about{" "}
-            {Math.round(mine.accuracyM)} m. The dashed circle shows {MY_AREA_RADIUS_M / 1000} km around you.
+            The green dot is you (GPS, accurate to about {Math.round(mine.accuracyM)} m). The dashed circle is{" "}
+            {MY_AREA_RADIUS_M / 1000} km around you.
           </>
         ) : (
-          <>
-            Tap the map to choose your field ({value.latitude.toFixed(2)}, {value.longitude.toFixed(2)}), or use{" "}
-            <strong>My location</strong>. Blue dots are the demo districts with saved satellite samples.
-          </>
-        )}{" "}
-        Pick NASA data to lay over the map below.
+          <>Tap the map to move your farm there. Blue dots are the sample districts.</>
+        )}
       </p>
       <NasaLayerPanel
         layer={overlay}
